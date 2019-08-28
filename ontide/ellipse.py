@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-'''
+"""
 This tidal ellipse package is taken from the PyFVCOM module written Created by
 Pierre Cazenave available at https://github.com/pwcazenave/PyFVCOM.
 The author retains the copyright of this program.
-'''
+"""
 
 """
 Python translation of Zhigang Xu's tidal_ellipse MATLAB tools, available at
@@ -155,8 +155,8 @@ def ap2ep(Au, PHIu, Av, PHIv, plot_demo=False):
     v = Av * np.exp(-i * PHIv)
 
     # Calculate complex radius of anticlockwise and clockwise circles:
-    wp = (u + i * v) / 2           # for anticlockwise circles
-    wm = np.conj(u - i * v) / 2    # for clockwise circles
+    wp = (u + i * v) / 2  # for anticlockwise circles
+    wm = np.conj(u - i * v) / 2  # for clockwise circles
     # and their amplitudes and angles
     Wp = np.abs(wp)
     Wm = np.abs(wm)
@@ -164,20 +164,20 @@ def ap2ep(Au, PHIu, Av, PHIv, plot_demo=False):
     THETAm = np.angle(wm)
 
     # calculate ep-parameters (ellipse parameters)
-    SEMA = Wp + Wm                 # Semi Major Axis, or maximum speed
-    SEMI = Wp - Wm                 # Semi Minor Axis, or minimum speed
-    ECC = SEMI / SEMA              # Eccentricity
+    SEMA = Wp + Wm  # Semi Major Axis, or maximum speed
+    SEMI = Wp - Wm  # Semi Minor Axis, or minimum speed
+    ECC = SEMI / SEMA  # Eccentricity
 
-    PHA = (THETAm - THETAp) / 2    # Phase angle, the time (in angle) when
-                                   # the velocity reaches the maximum
-    INC = (THETAm + THETAp) / 2    # Inclination, the angle between the
-                                   # semi major axis and x-axis (or u-axis).
+    PHA = (THETAm - THETAp) / 2  # Phase angle, the time (in angle) when
+    # the velocity reaches the maximum
+    INC = (THETAm + THETAp) / 2  # Inclination, the angle between the
+    # semi major axis and x-axis (or u-axis).
 
     # convert to degrees for output
-    PHA = PHA / np.pi*180
-    INC = INC / np.pi*180
-    THETAp = THETAp / np.pi*180
-    THETAm = THETAm / np.pi*180
+    PHA = PHA / np.pi * 180
+    INC = INC / np.pi * 180
+    THETAp = THETAp / np.pi * 180
+    THETAm = THETAm / np.pi * 180
 
     # map the resultant angles to the range of [0, 360].
     PHA = np.mod(PHA + 360, 360)
@@ -268,7 +268,7 @@ def ep2ap(SEMA, ECC, INC, PHA, plot_demo=False):
 
     # Calculate cAu, cAv --- complex amplitude of u and v
     cAu = wp + np.conj(wm)
-    cAv = -i * (wp-np.conj(wm))
+    cAv = -i * (wp - np.conj(wm))
     Au = np.abs(cAu)
     Av = np.abs(cAv)
     PHIu = -np.angle(cAu) * 180 / np.pi
@@ -345,13 +345,19 @@ def cBEpm(g, f, sigma, nu, kappa, z, h):
 
     """
 
-    if (len(g) > 1) | (len(f) > 1) | (len(sigma) > 1) | \
-            (len(nu) > 1) | (len(kappa) > 1) | (len(h) > 1):
-        print('inputs of g, f, sigma, nu, kappa, and h should be all scalars!')
+    if (
+        (len(g) > 1)
+        | (len(f) > 1)
+        | (len(sigma) > 1)
+        | (len(nu) > 1)
+        | (len(kappa) > 1)
+        | (len(h) > 1)
+    ):
+        print("inputs of g, f, sigma, nu, kappa, and h should be all scalars!")
         raise
 
     if (any(z / h > 0)) | (any(z / h < -1)):
-        print('z must be negative and must be within [0 -h]')
+        print("z must be negative and must be within [0 -h]")
 
     delta_e = np.sqrt(2 * nu / f)  # Ekman depth
     alpha = (1 + 1j) / delta_e * np.sqrt(1 + sigma / f)
@@ -384,12 +390,12 @@ def get_BE(g, alpha, h, z, nu, kappa):
         series_sum = A1 * B1
 
         for t in np.arange(2, T):
-            t2 = 2*t
-            A = (1 - z_h**t2) / t2 + nu_kh
+            t2 = 2 * t
+            A = (1 - z_h ** t2) / t2 + nu_kh
             B = B * ah * ah / (t2 - 1) / (t2 - 2)
             series_sum = series_sum + A * B
 
-        BE = C*series_sum
+        BE = C * series_sum
 
     # Finite solution
     else:
@@ -438,36 +444,38 @@ def plot_ell(SEMA, ECC, INC, PHA, IND=[1]):
 
     len_IND = len(IND)
     if IND:
-        cmd = 'sub2ind(size_SEMA, '
+        cmd = "sub2ind(size_SEMA, "
         if len_IND == 1:
-            titletxt = 'Ellipse '
+            titletxt = "Ellipse "
         else:
-            titletxt = 'Ellipse ('
+            titletxt = "Ellipse ("
 
         for k in range(len_IND):
             if k == 0:
-                cmd = cmd + '[' + str(IND[k])
+                cmd = cmd + "[" + str(IND[k])
             else:
-                cmd = cmd + ',' + str(IND[k])
+                cmd = cmd + "," + str(IND[k])
 
-            if k < len_IND-1:
-                titletxt = titletxt + str(IND[k]) + ','
+            if k < len_IND - 1:
+                titletxt = titletxt + str(IND[k]) + ","
             elif len_IND == 1:
                 titletxt = titletxt + str(IND[k])
             else:
-                titletxt = titletxt + str(IND[k]) + ')'
+                titletxt = titletxt + str(IND[k]) + ")"
 
-        cmd = 'n = ' + cmd + '])'
+        cmd = "n = " + cmd + "])"
         # This is pretty nasty, but it works.
         exec(cmd)
 
         plt.gcf()
         plt.clf()
-        do_the_plot(SEMA.flatten()[n], ECC.flatten()[n], INC.flatten()[n], PHA.flatten()[n])
-        titletxt = titletxt + ',  (red) green (anti-) clockwise component'
+        do_the_plot(
+            SEMA.flatten()[n], ECC.flatten()[n], INC.flatten()[n], PHA.flatten()[n]
+        )
+        titletxt = titletxt + ",  (red) green (anti-) clockwise component"
         plt.title(titletxt)
     elif len_IND:
-        print('IND input contains zero element(s)!\nNo ellipse will be plotted.')
+        print("IND input contains zero element(s)!\nNo ellipse will be plotted.")
 
 
 def do_the_plot(SEMA, ECC, INC, PHA):
@@ -506,30 +514,40 @@ def do_the_plot(SEMA, ECC, INC, PHA):
     wmin = SEMI * np.exp(i * (INC + np.pi / 2))
 
     plt.plot(np.real(w), np.imag(w))
-    plt.axis('equal')
-    plt.hold('on')
-    plt.plot([0, np.real(wmax)], [0, np.imag(wmax)], 'm')
-    plt.plot([0, np.real(wmin)], [0, np.imag(wmin)], 'm')
-    plt.xlabel('u')
-    plt.ylabel('v')
-    plt.plot(np.real(a), np.imag(a), 'r')
-    plt.plot(np.real(b), np.imag(b), 'g')
-    plt.plot([0, np.real(a[0])], [0, np.imag(a[0])], 'ro')
-    plt.plot([0, np.real(b[0])], [0, np.imag(b[0])], 'go')
-    plt.plot([0, np.real(w[0])], [0, np.imag(w[0])], 'bo')
-    plt.plot(np.real(a[0]), np.imag(a[0]), 'ro')
-    plt.plot(np.real(b[0]), np.imag(b[0]), 'go')
-    plt.plot(np.real(w[0]), np.imag(w[0]), 'bo')
-    plt.plot(np.real([a[0], a[0]+b[0]]), np.imag([a[0], a[0]+b[0]]), linestyle='--', color='g')
-    plt.plot(np.real([b[0], a[0]+b[0]]), np.imag([b[0], a[0]+b[0]]), linestyle='--', color='r')
+    plt.axis("equal")
+    plt.hold("on")
+    plt.plot([0, np.real(wmax)], [0, np.imag(wmax)], "m")
+    plt.plot([0, np.real(wmin)], [0, np.imag(wmin)], "m")
+    plt.xlabel("u")
+    plt.ylabel("v")
+    plt.plot(np.real(a), np.imag(a), "r")
+    plt.plot(np.real(b), np.imag(b), "g")
+    plt.plot([0, np.real(a[0])], [0, np.imag(a[0])], "ro")
+    plt.plot([0, np.real(b[0])], [0, np.imag(b[0])], "go")
+    plt.plot([0, np.real(w[0])], [0, np.imag(w[0])], "bo")
+    plt.plot(np.real(a[0]), np.imag(a[0]), "ro")
+    plt.plot(np.real(b[0]), np.imag(b[0]), "go")
+    plt.plot(np.real(w[0]), np.imag(w[0]), "bo")
+    plt.plot(
+        np.real([a[0], a[0] + b[0]]),
+        np.imag([a[0], a[0] + b[0]]),
+        linestyle="--",
+        color="g",
+    )
+    plt.plot(
+        np.real([b[0], a[0] + b[0]]),
+        np.imag([b[0], a[0] + b[0]]),
+        linestyle="--",
+        color="r",
+    )
 
     for n in range(len(ot)):
-        plt.hold('on')
-        plt.plot(np.real(a[n]), np.imag(a[n]), 'ro')
-        plt.plot(np.real(b[n]), np.imag(b[n]), 'go')
-        plt.plot(np.real(w[n]), np.imag(w[n]), 'bo')
+        plt.hold("on")
+        plt.plot(np.real(a[n]), np.imag(a[n]), "ro")
+        plt.plot(np.real(b[n]), np.imag(b[n]), "go")
+        plt.plot(np.real(w[n]), np.imag(w[n]), "bo")
 
-    plt.hold('off')
+    plt.hold("off")
     plt.show()
 
 
@@ -580,7 +598,7 @@ def prep_plot(SEMA, ECC, INC, PHA):
     return w, wmin, wmax
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     """
     Replicate the tidal ellipse example file from Zhigang Xu's tidal_ellipse
@@ -591,8 +609,8 @@ if __name__ == '__main__':
     """
 
     # Demonstrate how to use ap2ep and ep2ap
-    Au = np.random.random([4, 3, 2])           # so 4x3x2 multi-dimensional matrices
-    Av = np.random.random([4, 3, 2])           # are used for the demonstration.
+    Au = np.random.random([4, 3, 2])  # so 4x3x2 multi-dimensional matrices
+    Av = np.random.random([4, 3, 2])  # are used for the demonstration.
     Phi_v = np.random.random([4, 3, 2]) * 360  # phase lags inputs are expected to
     Phi_u = np.random.random([4, 3, 2]) * 360  # be in degrees.
 
@@ -604,11 +622,17 @@ if __name__ == '__main__':
     rAu, rPhi_u, rAv, rPhi_v, rw = ep2ap(SEMA, ECC, INC, PHA, [2, 3, 1])
 
     # Check if ep2ap has recovered Au, Phi_u, Av, Phi_v
-    print((np.max(np.abs(rAu - Au).flatten())))        # = 9.9920e-16, = 2.22044604925e-16
-    print((np.max(np.abs(rAv - Av).flatten())))        # = 6.6613e-16, = 7.77156117238e-16
-    print((np.max(np.abs(rPhi_u - Phi_u).flatten())))  # = 4.4764e-13, = 1.70530256582e-13
-    print((np.max(np.abs(rPhi_v - Phi_v).flatten())))  # = 1.1369e-13, = 2.27373675443e-13
-    print((np.max(np.max(np.abs(w - rw).flatten()))))  # = 1.3710e-15, = 1.1322097734e-15
+    print((np.max(np.abs(rAu - Au).flatten())))  # = 9.9920e-16, = 2.22044604925e-16
+    print((np.max(np.abs(rAv - Av).flatten())))  # = 6.6613e-16, = 7.77156117238e-16
+    print(
+        (np.max(np.abs(rPhi_u - Phi_u).flatten()))
+    )  # = 4.4764e-13, = 1.70530256582e-13
+    print(
+        (np.max(np.abs(rPhi_v - Phi_v).flatten()))
+    )  # = 1.1369e-13, = 2.27373675443e-13
+    print(
+        (np.max(np.max(np.abs(w - rw).flatten())))
+    )  # = 1.3710e-15, = 1.1322097734e-15
     # For the random realization I (Zhigang Xu) had, the differences are listed
     # on the right hand of the above column. I (Pierre Cazenave) got the second
     # column with the Python version. What are yours?
