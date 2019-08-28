@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+
+"""OTIS tools."""
+
 import numpy as np
 import xarray as xr
 import pyroms
