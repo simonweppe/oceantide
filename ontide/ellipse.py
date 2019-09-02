@@ -193,7 +193,7 @@ def ap2ep(Au, PHIu, Av, PHIv, plot_demo=False):
     PHA = np.mod(PHA, 360)
 
     if plot_demo:
-        plot_ell(SEMA, ECC, INC, PHA, plot_demo)
+        plot_ell(SEMA, ECC, INC, PHA)
 
     ndot = np.prod(np.shape(SEMA))
     dot = 2 * np.pi / ndot
@@ -444,7 +444,7 @@ def plot_ell(SEMA, ECC, INC, PHA, IND=[1]):
 
     len_IND = len(IND)
     if IND:
-        cmd = "sub2ind(size_SEMA, "
+        cmd = "sub2ind(SEMA.shape, "
         if len_IND == 1:
             titletxt = "Ellipse "
         else:
