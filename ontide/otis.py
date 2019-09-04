@@ -92,8 +92,13 @@ class CGrid_OTIS(object):
 
         self.null = -9999.0
 
-        x0, x1 = xlim[0], xlim[1]
-        y0, y1 = ylim[0], ylim[1]
+        f = np.where(
+            (lon_t >= xlim[0])
+            & (lon_t <= xlim[1])
+            & (lat_t >= ylim[0])
+            & (lat_t <= ylim[1])
+        )
+        x0, x1, y0, y1 = f[1].min(), f[1].max(), f[0].min(), f[0].max()
 
         self.z_t = z_t[y0 : y1 + 1, x0 : x1 + 1]
 
