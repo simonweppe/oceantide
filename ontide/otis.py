@@ -4,7 +4,7 @@
 
 import numpy as np
 import xarray as xr
-import pyroms
+import pyroms._remapping.flood as fflood
 
 
 def load_otis(grdfile, version="v1", xlim=None, ylim=None, missing_value=-9999):
@@ -25,9 +25,9 @@ def load_otis(grdfile, version="v1", xlim=None, ylim=None, missing_value=-9999):
     lonv = ds.lon_v.values
     latv = ds.lat_v.values
 
-    zh = ds.hz.values
-    zu = ds.hu.values
-    zv = ds.hv.values
+    zh = ds.hz.values + 0.001  # avoid zero-division, otis land values are zero :/
+    zu = ds.hu.values + 0.001
+    zv = ds.hv.values + 0.001
 
     # land mask
     hmask = zh != 0
@@ -62,6 +62,39 @@ def load_otis(grdfile, version="v1", xlim=None, ylim=None, missing_value=-9999):
     )
 
     return grid
+
+
+def flood(otis, dmax=1):
+    """
+    Flood variables into land to avoid spurious values close to the coast
+
+    Args:
+        otis (xarray.Dataset):   OTIS dataset 
+        dmax (int>0):              Maximum horizontal flooding distance
+
+    """
+
+    msk = np.isnan(dsu.URe.values[0, ...])
+
+    for k in range(otis.dims["nc"] - 1, 0, -1):
+        idxnan = np.where(msk == True)
+        idx = np.where(msk == False)
+
+        if list(idx[0]):
+            wet = np.zeros((len(idx[0]), 2))
+            dry = np.zeros((len(idxnan[0]), 2))
+            wet[:, 0] = idx[0] + 1
+            wet[:, 1] = idx[1] + 1
+            dry[:, 0] = idxnan[0] + 1
+            dry[:, 1] = idxnan[1] + 1
+
+        for varname, var in otis.data_vars.items():
+            if len(var.dims) > 2:  # leaving cons and coords out
+                var.values[k, ...] = fflood(
+                    var.values[k, ...], wet, dry, otis[lonv], otis.latv, dmax
+                )
+
+    return otis
 
 
 class CGrid_OTIS(object):
