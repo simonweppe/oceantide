@@ -72,6 +72,7 @@ class NCOtis(object):
         self._fix_topo()
         self._fix_east()
         self._mask_vars()
+        self._transp2vel()
         self.was_subsetted = False
 
     def __repr__(self):
@@ -91,6 +92,12 @@ class NCOtis(object):
         """ Make topography values above zero as they are inconveniently = 0
 
         """
+        # this is a convenience for the remap fortran routines using scrip
+        # needs to be done before topo null is no longer = 0
+        self.hmask = self.ds.hz.values != 0
+        self.umask = self.ds.hu.values != 0
+        self.vmask = self.ds.hv.values != 0
+
         self.ds.hz.values += 0.001
         self.ds.hu.values += 0.001
         self.ds.hv.values += 0.001
@@ -129,6 +136,25 @@ class NCOtis(object):
         for varname, var in self.ds.data_vars.items():
             if len(var.dims) > 2:  # leaving cons and coords out
                 var.values = np.ma.masked_where(var.values == 0, var.values)
+
+    def _transp2vel(self):
+        """ Compute complex velocities based on complex transports and append 
+            them to the xr.Dataset
+        
+        """
+        longname = "Tidal WE transport complex ampl., {c} part, at {n}-nodes"
+        variables = dict(uRe=None, uIm=None, vRe=None, vIm=None)
+
+        for node in ["u", "v"]:
+            for com in ["Re", "Im"]:
+                variables["{}{}".format(node, com)] = xr.Variable(
+                    self.ds["{}{}".format(node.upper(), com)].dims,
+                    self.ds["{}{}".format(node.upper(), com)].values
+                    / self.ds["h{}".format(node)].values,
+                    attrs=dict(long_name=longname.format(c=com, n=node.upper()), units="meter/s"),
+                )
+
+        self.ds = self.ds.assign(variables=variables)
 
     @property
     def cons(self):
@@ -169,30 +195,30 @@ class NCOtis(object):
         x0, x1, y0, y1 = f[1].min(), f[1].max(), f[0].min(), f[0].max()
 
         # compute vertices and angle before we lose the indexes in isel
-        # self.lon_t_vert = 0.5 * (
-        #     self.ds.lon_z.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
-        #     + self.ds.lon_z.values[y0 : y1 + 2, x0 : x1 + 2]
-        # )
-        # self.lat_t_vert = 0.5 * (
-        #     self.ds.lat_z.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
-        #     + self.ds.lat_z.values[y0 : y1 + 2, x0 : x1 + 2]
-        # )
-        # self.lon_u_vert = 0.5 * (
-        #     self.ds.lon_u.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
-        #     + self.ds.lon_u.values[y0 : y1 + 2, x0 : x1 + 2]
-        # )
-        # self.lat_u_vert = 0.5 * (
-        #     self.ds.lat_u.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
-        #     + self.ds.lat_u.values[y0 : y1 + 2, x0 : x1 + 2]
-        # )
-        # self.lon_v_vert = 0.5 * (
-        #     self.ds.lon_v.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
-        #     + self.ds.lon_v.values[y0 : y1 + 2, x0 : x1 + 2]
-        # )
-        # self.lat_v_vert = 0.5 * (
-        #     self.ds.lat_v.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
-        #     + self.ds.lat_v.values[y0 : y1 + 2, x0 : x1 + 2]
-        # )
+        self.lon_t_vert = 0.5 * (
+            self.ds.lon_z.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
+            + self.ds.lon_z.values[y0 : y1 + 2, x0 : x1 + 2]
+        )
+        self.lat_t_vert = 0.5 * (
+            self.ds.lat_z.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
+            + self.ds.lat_z.values[y0 : y1 + 2, x0 : x1 + 2]
+        )
+        self.lon_u_vert = 0.5 * (
+            self.ds.lon_u.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
+            + self.ds.lon_u.values[y0 : y1 + 2, x0 : x1 + 2]
+        )
+        self.lat_u_vert = 0.5 * (
+            self.ds.lat_u.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
+            + self.ds.lat_u.values[y0 : y1 + 2, x0 : x1 + 2]
+        )
+        self.lon_v_vert = 0.5 * (
+            self.ds.lon_v.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
+            + self.ds.lon_v.values[y0 : y1 + 2, x0 : x1 + 2]
+        )
+        self.lat_v_vert = 0.5 * (
+            self.ds.lat_v.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
+            + self.ds.lat_v.values[y0 : y1 + 2, x0 : x1 + 2]
+        )
 
         # ones = np.ones(self.ds.hz.shape)
         # a1 = self.ds.lat_u[y0 : y1 + 1, x0 + 1 : x1 + 2] - self.ds.lat_u[y0 : y1 + 1, x0 : x1 + 1]
@@ -255,149 +281,4 @@ class NCOtis(object):
                         self.ds[latv].values,
                         dmax,
                     )
-
-
-
-# class CGrid_OTIS(object):
-
-#     # CGrid object for OTIS
-
-#     def __init__(
-#         self,
-#         cons,
-#         lon_t,
-#         lat_t,
-#         lon_u,
-#         lat_u,
-#         lon_v,
-#         lat_v,
-#         mask_t,
-#         mask_u,
-#         mask_v,
-#         z_t,
-#         z_u,
-#         z_v,
-#         missing_value,
-#         xlim,
-#         ylim,
-#     ):
-#         self.cons = cons
-#         self.name = "otis"
-
-#         self.null = -9999.0
-
-#         f = np.where(
-#             (lon_t >= xlim[0])
-#             & (lon_t <= xlim[1])
-#             & (lat_t >= ylim[0])
-#             & (lat_t <= ylim[1])
-#         )
-#         x0, x1, y0, y1 = f[1].min(), f[1].max(), f[0].min(), f[0].max()
-
-#         self.z_t = z_t[y0 : y1 + 1, x0 : x1 + 1]
-
-#         self.z_u = z_u[y0 : y1 + 1, x0 : x1 + 1]
-#         self.z_v = z_v[y0 : y1 + 1, x0 : x1 + 1]
-
-#         self.lon_t = lon_t[y0 : y1 + 1, x0 : x1 + 1]
-#         self.lat_t = lat_t[y0 : y1 + 1, x0 : x1 + 1]
-
-#         self.lon_u = lon_u[y0 : y1 + 1, x0 : x1 + 1]
-#         self.lat_u = lat_u[y0 : y1 + 1, x0 : x1 + 1]
-#         self.lon_v = lon_v[y0 : y1 + 1, x0 : x1 + 1]
-#         self.lat_v = lat_v[y0 : y1 + 1, x0 : x1 + 1]
-
-#         self.lon_t_vert = 0.5 * (
-#             lon_t[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1] + lon_t[y0 : y1 + 2, x0 : x1 + 2]
-#         )
-#         self.lat_t_vert = 0.5 * (
-#             lat_t[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1] + lat_t[y0 : y1 + 2, x0 : x1 + 2]
-#         )
-
-#         self.lon_u_vert = 0.5 * (
-#             lon_u[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1] + lon_u[y0 : y1 + 2, x0 : x1 + 2]
-#         )
-#         self.lat_u_vert = 0.5 * (
-#             lat_u[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1] + lat_u[y0 : y1 + 2, x0 : x1 + 2]
-#         )
-#         self.lon_v_vert = 0.5 * (
-#             lon_v[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1] + lon_v[y0 : y1 + 2, x0 : x1 + 2]
-#         )
-#         self.lat_v_vert = 0.5 * (
-#             lat_v[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1] + lat_v[y0 : y1 + 2, x0 : x1 + 2]
-#         )
-
-#         self.mask_t = mask_t[y0 : y1 + 1, x0 : x1 + 1]
-#         self.mask_u = mask_u[y0 : y1 + 1, x0 : x1 + 1]
-#         self.mask_v = mask_v[y0 : y1 + 1, x0 : x1 + 1]
-
-#         ones = np.ones(self.z_t.shape)
-#         a1 = lat_u[y0 : y1 + 1, x0 + 1 : x1 + 2] - lat_u[y0 : y1 + 1, x0 : x1 + 1]
-#         a2 = lon_u[y0 : y1 + 1, x0 + 1 : x1 + 2] - lon_u[y0 : y1 + 1, x0 : x1 + 1]
-#         a3 = 0.5 * (
-#             lat_u[y0 : y1 + 1, x0 + 1 : x1 + 2] + lat_u[y0 : y1 + 1, x0 : x1 + 1]
-#         )
-#         a2 = np.where(a2 > 180 * ones, a2 - 360 * ones, a2)
-#         a2 = np.where(a2 < -180 * ones, a2 + 360 * ones, a2)
-#         a2 = a2 * np.cos(np.pi / 180.0 * a3)
-#         self.angle = np.arctan2(a1, a2)
-
-
-# def load_otis(grdfile, version="v1", xlim=None, ylim=None, missing_value=-9999):
-#     """
-#     grd = load_otis(grdfile)
-
-#     Load Cgrid object for OTIS from netCDF file
-#     """
-#     consfile = ".".join([grdfile.split(".")[0].replace("grid", "h"), version, "nc"])
-
-#     ds = xr.open_dataset(grdfile)
-#     dsh = xr.open_dataset(consfile)
-
-#     lonh = ds.lon_z.values
-#     lath = ds.lat_z.values
-#     lonu = ds.lon_u.values
-#     latu = ds.lat_u.values
-#     lonv = ds.lon_v.values
-#     latv = ds.lat_v.values
-
-#     zh = ds.hz.values + 0.001  # avoid zero-division, otis land values are zero :/
-#     zu = ds.hu.values + 0.001
-#     zv = ds.hv.values + 0.001
-
-#     # land mask
-#     hmask = zh != 0
-#     umask = zu != 0
-#     vmask = zv != 0
-
-#     # longitude from -180 to 180
-#     lonh[lonh > 180] = lonh[lonh > 180] - 360
-#     lonu[lonu > 180] = lonu[lonu > 180] - 360
-#     lonv[lonv > 180] = lonv[lonv > 180] - 360
-
-#     cons = dsh.con.values.tostring().decode().split()
-#     cons = [c.upper() for c in cons]
-
-#     grid = CGrid_OTIS(
-#         cons,
-#         lonh,
-#         lath,
-#         lonu,
-#         latu,
-#         lonv,
-#         latv,
-#         hmask,
-#         umask,
-#         vmask,
-#         zh,
-#         zu,
-#         zv,
-#         missing_value,
-#         xlim,
-#         ylim,
-#     )
-
-#     return grid
-
-
 

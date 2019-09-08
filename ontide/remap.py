@@ -8,7 +8,7 @@ import netCDF4 as netCDF
 import pyroms
 
 
-def make_remap_grid_file(Cgrd, Cpos="t"):
+def make_remap_grid_file(Cgrd, Cpos="z"):
     # create remap file
     remap_filename = "remap_grid_" + Cgrd.name + "_" + Cpos + ".nc"
     nc = netCDF.Dataset(remap_filename, "w", format="NETCDF3_CLASSIC")
@@ -19,15 +19,16 @@ def make_remap_grid_file(Cgrd, Cpos="t"):
 
     lon_corner = Cgrd.lon_t_vert
     lat_corner = Cgrd.lat_t_vert
-    grid_center_lon = Cgrd.lon_t.flatten()
-    grid_center_lat = Cgrd.lat_t.flatten()
-    Mp, Lp = Cgrd.lon_t.shape
-    if Cpos == "t":
-        grid_imask = Cgrd.mask_t.flatten()
+    grid_center_lon = Cgrd.ds['lon_{}'.format(Cpos)].values.flatten()
+    grid_center_lat = Cgrd.ds['lat_{}'.format(Cpos)].values.flatten()
+    Mp, Lp = Cgrd.ds.lon_z.shape
+
+    if Cpos == "z":
+        grid_imask = Cgrd.hmask.flatten()
     elif Cpos == "u":
-        grid_imask = Cgrd.mask_u.flatten()
+        grid_imask = Cgrd.umask.flatten()
     elif Cpos == "v":
-        grid_imask = Cgrd.mask_v.flatten()
+        grid_imask = Cgrd.vmask.flatten()
 
     grid_size = Lp * Mp
 
