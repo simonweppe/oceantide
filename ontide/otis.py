@@ -12,7 +12,7 @@ OTIS_VERSION = "v1"
 
 
 class NCOtis(object):
-    """ Object to replace CGrid_OTIS and handle h, u and v at once
+    """ Object to replace CGrid_OTIS from pyroms and handle h, u and v at once
 
     Args: 
         otis_grid (str):         Filename of the regional OTIS grid in fspec format
@@ -31,7 +31,7 @@ class NCOtis(object):
 
     def __init__(
         self,
-        otis_grid="file:///data/otis/grid_tpxo9.nc",
+        otis_grid="file:///data/tide/otis_netcdf/grid_tpxo9.nc",
         drop_amp_params=True,
         x0=None,
         x1=None,
@@ -282,3 +282,43 @@ class NCOtis(object):
                         dmax,
                     )
 
+
+def predict_tide_grid(lon, lat, time, modfile, conlist=None):
+    """ Performs a tidal prediction at all points in [lon,lat] at times.
+
+	Args:
+	
+	modfile (str):            (Relative) path of the constituents model 
+                                file on your file system
+                                files must be in OTIS netcdf format
+                                TODO: make it a kwarg and discover best resolution if not provided
+	lon, lat (numpy ndarray): Each is an n-length array of longitude 
+                                and latitudes in degrees to perform predictions at.
+                                Lat ranges from -90 to 90. Lon can range from -180 to 360.
+  	time:                       m-length array of times.  Acceptable formats are 
+                                   a list of `datetime` objects, a list or array of 
+                                   `numpy.datetime64` objects, or pandas date_range
+	conlist :                 List of strings (optional). If supplied, gives a list 
+                                of tidal constituents to include in prediction. 
+                                Available are 'M2', 'S2', 'N2', 'K2', 'K1', 'O1', 'P1', 'Q1'
+
+	Returns
+	-------
+	h : m-by-n numpy array of tidal heights
+		height is in meters, times are along the rows, and positions along
+		the columns
+	u : m-by-n numpy array of east-west tidal velocity [m/s]
+	v : m-by-n numpy array of north tidal velocity [m/s]
+
+	Examples
+	--------
+
+	dates = np.arange(np.datetime64('2001-04-03'),
+	                  np.datetime64('2001-05-03'), dtype='datetime64[h]' )
+
+	lon = np.array([198, 199])
+	lat = np.array([21, 19])
+
+	h, u, v = predict_tide_grid(lon, lat, time, '/data/tide/otis_netcdf/Model_ES2008') TODO: make it a netcdf file
+
+	"""
