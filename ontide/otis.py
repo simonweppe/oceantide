@@ -2,10 +2,14 @@
 
 """OTIS tools."""
 
+import os
 import numpy as np
+from scipy import interpolate
 import xarray as xr
 from fsspec import filesystem, get_mapper
 import pyroms
+from .core import nodal, astrol
+from .constituents import OMEGA
 
 
 OTIS_VERSION = "v1"
@@ -15,14 +19,14 @@ class NCOtis(object):
     """ Object to replace CGrid_OTIS from pyroms and handle h, u and v at once
 
     Args: 
-        otis_grid (str):         Filename of the regional OTIS grid in fspec format
-                                 Ex: gs://oceanum-static/otis/grid_tpxo9.nc
+        model (str):             Filename of the regional OTIS model file in fspec format
+                                 Ex: gs://oceanum-prod/tide/Model_ES2008
         drop_amp_params (bool):  Option to drop amplitude parameters (they are not used
                                  for ROMS tide file because complex params are more
                                  appropraite for remapping)
 
     Developer notes:
-        - this should replace both .load_otis and .CGrid_OTIS
+        - this should replace both .load_otis and .CGrid_OTIS from pyroms
         - migrate flood here as a method
 
     """
@@ -31,20 +35,26 @@ class NCOtis(object):
 
     def __init__(
         self,
-        otis_grid="file:///data/tide/otis_netcdf/grid_tpxo9.nc",
+        model="file:///data/tide/otis_netcdf/Model_ES2008",
         drop_amp_params=True,
         x0=None,
         x1=None,
         y0=None,
         y1=None,
     ):
-        self.gridfile = get_mapper(otis_grid).root
-        elevfile = ".".join(
-            [self.gridfile.split(".")[0].replace("grid", "h"), OTIS_VERSION, "nc"]
-        )
-        curfile = ".".join(
-            [self.gridfile.split(".")[0].replace("grid", "u"), OTIS_VERSION, "nc"]
-        )
+        # self.gridfile = get_mapper(model).root
+        # elevfile = ".".join(
+        #     [self.gridfile.split(".")[0].replace("grid", "h"), OTIS_VERSION, "nc"]
+        # )
+        # curfile = ".".join(
+        #     [self.gridfile.split(".")[0].replace("grid", "u"), OTIS_VERSION, "nc"]
+        # )
+
+        with open(model) as f:
+            lines = f.readlines()
+            elevfile = os.path.join(os.path.dirname(model), lines[0].split('/')[-1]).strip()
+            curfile = os.path.join(os.path.dirname(model), lines[1].split('/')[-1]).strip()
+            self.gridfile = os.path.join(os.path.dirname(model), lines[2].split('/')[-1]).strip()
 
         dsg = xr.open_dataset(self.gridfile)
         dsh = xr.open_dataset(elevfile)
@@ -289,15 +299,16 @@ def predict_tide_grid(lon, lat, time, modfile, conlist=None):
 	Args:
 	
 	modfile (str):            (Relative) path of the constituents model 
-                                file on your file system
-                                files must be in OTIS netcdf format
+                                file grid on your file system
+                                files must be in OTIS netcdf grid format
                                 TODO: make it a kwarg and discover best resolution if not provided
+                                TODO: convert to zarr and use fsspec to generalize this
 	lon, lat (numpy ndarray): Each is an n-length array of longitude 
                                 and latitudes in degrees to perform predictions at.
                                 Lat ranges from -90 to 90. Lon can range from -180 to 360.
-  	time:                       m-length array of times.  Acceptable formats are 
-                                   a list of `datetime` objects, a list or array of 
-                                   `numpy.datetime64` objects, or pandas date_range
+  	time:                     m-length array of times.  Acceptable formats are 
+                                a list of `datetime` objects, a list or array of 
+                                `numpy.datetime64` objects, or pandas date_range
 	conlist :                 List of strings (optional). If supplied, gives a list 
                                 of tidal constituents to include in prediction. 
                                 Available are 'M2', 'S2', 'N2', 'K2', 'K1', 'O1', 'P1', 'Q1'
@@ -322,3 +333,78 @@ def predict_tide_grid(lon, lat, time, modfile, conlist=None):
 	h, u, v = predict_tide_grid(lon, lat, time, '/data/tide/otis_netcdf/Model_ES2008') TODO: make it a netcdf file
 
 	"""
+    otis = NCOtis(modfile, x0=lon.min(), x1=lon.max(), y0=lat.min(), y1=lat.max())
+    otis.flood()
+    conlist = conlist or otis.cons
+    omega = [OMEGA[c] for c in conlist]
+
+    # Nodal correction: nodal needs days since 1992:
+    days = (time[0] - np.datetime64('1992-01-01', 'D')).days
+    pu, pf, v0u = nodal(days + 48622.0, conlist) # not sure where 48622.0 comes from ???
+
+    # interpolating to requested grid
+    hRe, hIm, uRe, uIm, vRe, vIm = _regrid(otis, lon, lat)
+    hRe, hIm, uRe, uIm, vRe, vIm = _remask(hRe, hIm, uRe, uIm, vRe, vIm, otis, lon, lat)
+
+    # Calculate the time series
+    tsec = np.array((time - np.datetime64('1992-01-01', 's')).total_seconds())
+    nt = time.size 
+    nc = len(conlist)
+    nj, ni = lon.shape
+    
+    hRe = hRe.reshape((nc, nj * ni))
+    hIm = hIm.reshape((nc, nj * ni))
+    uRe = uRe.reshape((nc, nj * ni))
+    uIm = uIm.reshape((nc, nj * ni))
+    vRe = vRe.reshape((nc, nj * ni))
+    vIm = vIm.reshape((nc, nj * ni))
+
+    h, u, v = np.zeros((nt, nj * ni)), np.zeros((nt, nj * ni)), np.zeros((nt, nj * ni))
+
+    for k, om in enumerate(omega):
+        for idx in range(nj * ni):
+            h[:, idx] += pf[k] * hRe[k, idx] * np.cos(om * tsec + v0u[k] + pu[k]) - pf[k] * hIm[k, idx] * np.sin(om * tsec + v0u[k] + pu[k])
+            u[:, idx] += pf[k] * uRe[k, idx] * np.cos(om * tsec + v0u[k] + pu[k]) - pf[k] * uIm[k, idx] * np.sin(om * tsec + v0u[k] + pu[k])
+            v[:, idx] += pf[k] * vRe[k, idx] * np.cos(om * tsec + v0u[k] + pu[k]) - pf[k] * vIm[k, idx] * np.sin(om * tsec + v0u[k] + pu[k])
+
+
+def _remask(hRe, hIm, uRe, uIm, vRe, vIm, otis, lon, lat):
+    depth = _interp(otis.ds.hz, otis.ds.lon_z, otis.ds.lat_z, lon.ravel(), lat.ravel())
+    depth = depth.reshape(lon.shape)[None, :].repeat(len(otis.cons), axis=0)
+    hRe = np.ma.masked_where(depth < 1, hRe)
+    hIm = np.ma.masked_where(depth < 1, hIm)
+    uRe = np.ma.masked_where(depth < 1, uRe)
+    uIm = np.ma.masked_where(depth < 1, uIm)
+    vRe = np.ma.masked_where(depth < 1, vRe)
+    vIm = np.ma.masked_where(depth < 1, vIm)
+    return hRe, hIm, uRe, uIm, vRe, vIm
+
+
+def _regrid(otis, lon, lat):
+    nj, ni = lon.shape
+    nc = len(otis.cons)
+    hRe = np.zeros((nc, nj * ni))
+    hIm = np.zeros((nc, nj * ni))
+    uRe = np.zeros((nc, nj * ni))
+    uIm = np.zeros((nc, nj * ni))
+    vRe = np.zeros((nc, nj * ni))
+    vIm = np.zeros((nc, nj * ni))
+
+    for idx in range(nc):
+        hRe[idx, :] = _interp(otis.ds.hRe[idx,...], otis.ds.lon_z, otis.ds.lat_z, lon.ravel(), lat.ravel())
+        hIm[idx, :] = _interp(otis.ds.hIm[idx,...], otis.ds.lon_z, otis.ds.lat_z, lon.ravel(), lat.ravel())
+        uRe[idx, :] = _interp(otis.ds.uRe[idx,...], otis.ds.lon_z, otis.ds.lat_z, lon.ravel(), lat.ravel())
+        uIm[idx, :] = _interp(otis.ds.uIm[idx,...], otis.ds.lon_z, otis.ds.lat_z, lon.ravel(), lat.ravel())
+        vRe[idx, :] = _interp(otis.ds.vRe[idx,...], otis.ds.lon_z, otis.ds.lat_z, lon.ravel(), lat.ravel())
+        vIm[idx, :] = _interp(otis.ds.vIm[idx,...], otis.ds.lon_z, otis.ds.lat_z, lon.ravel(), lat.ravel())
+
+    s = (nc,) + lon.shape
+    
+    return hRe.reshape(s), hIm.reshape(s), uRe.reshape(s), uIm.reshape(s), vRe.reshape(s), vIm.reshape(s)
+ 
+
+def _interp(arr, x, y, x2, y2):
+    arr, x, y = arr.values, x.values, y.values
+    arr[np.isnan(arr) == 1] = 0
+    spl = interpolate.RectBivariateSpline(x[0, :], y[:, 0], arr.T)
+    return spl(x2, y2, grid=False)
