@@ -3,7 +3,7 @@
 """Core tools for tidal analysis and prediction."""
 
 import numpy as np
-from .constituents import PERIODS, OMEGA, V0U
+from constituents import PERIODS, OMEGA, V0U
 
 
 def nodal(time, con):
