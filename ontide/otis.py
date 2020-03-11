@@ -8,8 +8,8 @@ from scipy import interpolate
 import xarray as xr
 from fsspec import filesystem, get_mapper
 import pyroms
-from core import nodal, astrol
-from constituents import OMEGA
+from .core import nodal, astrol
+from .constituents import OMEGA
 
 
 OTIS_VERSION = "v1"
@@ -371,8 +371,16 @@ def predict_tide_grid(lon, lat, time, modfile, conlist=None):
             v[:, idx] += pf[k] * vRe[k, idx] * np.cos(om * tsec + v0u[k] + pu[k]) - pf[k] * vIm[k, idx] * np.sin(om * tsec + v0u[k] + pu[k])
 
     # TODO: write netcdf file and refactor using dicts to respect DRY
+    h, u, v = h.reshape((nt, nj, ni)), u.reshape((nt, nj, ni)), v.reshape((nt, nj, ni))
 
-    return h.reshape((nt, nj, ni)), u.reshape((nt, nj, ni)), v.reshape((nt, nj, ni))
+    # TODO: write variable attributes
+    ha = xr.DataArray(dims=('time', 'lat', 'lon'), coords={'time': time, 'lat': lat[:,0], 'lon': lon[0,...]}, name='et', data=h)
+    ua = xr.DataArray(dims=('time', 'lat', 'lon'), coords={'time': time, 'lat': lat[:,0], 'lon': lon[0,...]}, name='ut', data=u)
+    va = xr.DataArray(dims=('time', 'lat', 'lon'), coords={'time': time, 'lat': lat[:,0], 'lon': lon[0,...]}, name='vt', data=v)
+    ds = xr.Dataset({'et': ha, 'ut': ua, 'vt': va})
+
+
+    return ds
 
 
 def _remask(hRe, hIm, uRe, uIm, vRe, vIm, otis, lon, lat):
@@ -422,12 +430,12 @@ if __name__ == '__main__':
     import datetime as dt
 
     # English Channel
-    xi = np.linspace(0.2, 3.4, 50) 
-    yi = np.linspace(49.5, 52.56, 53)
+    xi = np.linspace(-1, 4, 50) 
+    yi = np.linspace(48.5, 53.56, 53)
 
     # Hauraki Gulf
-    xi = np.linspace(174.8282, 175.6906, 50) 
-    yi = np.linspace(-37.3221, -36.1955, 53)
+    xi = np.linspace(173.8282, 176.6906, 50) 
+    yi = np.linspace(-38.3221, -35.1955, 53)
 
     lon, lat = np.meshgrid(xi, yi) 
     time = pd.date_range(dt.datetime(2001, 1, 1), dt.datetime(2001, 1, 7, 23), freq="H")
