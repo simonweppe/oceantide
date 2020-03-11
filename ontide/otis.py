@@ -420,8 +420,15 @@ def _interp(arr, x, y, x2, y2):
 if __name__ == '__main__':
     import pandas as pd
     import datetime as dt
+
+    # English Channel
     xi = np.linspace(0.2, 3.4, 50) 
-    yi = np.linspace(49.5, 52.56, 53) 
+    yi = np.linspace(49.5, 52.56, 53)
+
+    # Hauraki Gulf
+    xi = np.linspace(174.8282, 175.6906, 50) 
+    yi = np.linspace(-37.3221, -36.1955, 53)
+
     lon, lat = np.meshgrid(xi, yi) 
     time = pd.date_range(dt.datetime(2001, 1, 1), dt.datetime(2001, 1, 7, 23), freq="H")
     modfile = '/data/tide/otis_netcdf/Model_tpxo7'
