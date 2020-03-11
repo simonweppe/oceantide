@@ -370,6 +370,8 @@ def predict_tide_grid(lon, lat, time, modfile, conlist=None):
             u[:, idx] += pf[k] * uRe[k, idx] * np.cos(om * tsec + v0u[k] + pu[k]) - pf[k] * uIm[k, idx] * np.sin(om * tsec + v0u[k] + pu[k])
             v[:, idx] += pf[k] * vRe[k, idx] * np.cos(om * tsec + v0u[k] + pu[k]) - pf[k] * vIm[k, idx] * np.sin(om * tsec + v0u[k] + pu[k])
 
+    # TODO: write netcdf file and refactor using dicts to respect DRY
+
     return h.reshape((nt, nj, ni)), u.reshape((nt, nj, ni)), v.reshape((nt, nj, ni))
 
 
