@@ -78,12 +78,13 @@ class NCOtis(object):
                 np.array([x0, x1, y0, y1]).all() is not None
             ), "If one of <x0,x1,y0,y1> is provided, all must be provided"
             self.subset(x0=x0, x1=x1, y0=y0, y1=y1)
+        else:
+            self.was_subsetted = False
 
         self._fix_topo()
         self._fix_east()
         self._mask_vars()
         self._transp2vel()
-        self.was_subsetted = False
 
     def __repr__(self):
         _repr = "<OTIS {} nc={} x0={:0.2f} x1={:0.2f} y0={:0.2f} y1={:0.2f} subset={}>".format(
@@ -334,7 +335,8 @@ def predict_tide_grid(lon, lat, time, modfile, conlist=None):
 
 	"""
     otis = NCOtis(modfile, x0=lon.min(), x1=lon.max(), y0=lat.min(), y1=lat.max())
-    otis.flood()
+    # print("Flooding land to avoid interpolation noise")
+    # otis.flood()
     conlist = conlist or otis.cons
     omega = [OMEGA[c] for c in conlist]
 
@@ -343,6 +345,7 @@ def predict_tide_grid(lon, lat, time, modfile, conlist=None):
     pu, pf, v0u = nodal(days + 48622.0, conlist) # not sure where 48622.0 comes from ???
 
     # interpolating to requested grid
+    print("Interpolating variables to requested grid")
     hRe, hIm, uRe, uIm, vRe, vIm = _regrid(otis, lon, lat)
     hRe, hIm, uRe, uIm, vRe, vIm = _remask(hRe, hIm, uRe, uIm, vRe, vIm, otis, lon, lat)
 
@@ -351,7 +354,7 @@ def predict_tide_grid(lon, lat, time, modfile, conlist=None):
     nt = time.size 
     nc = len(conlist)
     nj, ni = lon.shape
-    
+
     hRe = hRe.reshape((nc, nj * ni))
     hIm = hIm.reshape((nc, nj * ni))
     uRe = uRe.reshape((nc, nj * ni))
@@ -410,3 +413,14 @@ def _interp(arr, x, y, x2, y2):
     arr[np.isnan(arr) == 1] = 0
     spl = interpolate.RectBivariateSpline(x[0, :], y[:, 0], arr.T)
     return spl(x2, y2, grid=False)
+
+
+if __name__ == '__main__':
+    import pandas as pd
+    import datetime as dt
+    xi = np.linspace(0.2, 3.4, 50) 
+    yi = np.linspace(49.5, 52.56, 53) 
+    lon, lat = np.meshgrid(xi, yi) 
+    time = pd.date_range(dt.datetime(2001, 1, 1), dt.datetime(2001, 1, 7, 23), freq="H")
+    modfile = '/data/tide/otis_netcdf/Model_tpxo7'
+    h, u, v = predict_tide_grid(lon, lat, time, modfile)
