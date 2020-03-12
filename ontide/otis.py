@@ -36,7 +36,7 @@ class NCOtis(object):
 
     def __init__(
         self,
-        model="file:///data/tide/otis_netcdf/Model_ES2008",
+        model="file:///data/tide/otis_netcdf/Model_tpxo9",
         drop_amp_params=True,
         x0=None,
         x1=None,
