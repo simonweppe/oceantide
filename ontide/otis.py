@@ -12,7 +12,8 @@ from .core import nodal, astrol
 from .constituents import OMEGA
 
 
-OTIS_VERSION = "v1"
+OTIS_VERSION = "9"
+COMPLEX_VARS = ["hRe", "hIm", "uRe", "uIm", "vRe", "vIm"]
 
 
 class NCOtis(object):
@@ -42,19 +43,17 @@ class NCOtis(object):
         y0=None,
         y1=None,
     ):
-        # self.gridfile = get_mapper(model).root
-        # elevfile = ".".join(
-        #     [self.gridfile.split(".")[0].replace("grid", "h"), OTIS_VERSION, "nc"]
-        # )
-        # curfile = ".".join(
-        #     [self.gridfile.split(".")[0].replace("grid", "u"), OTIS_VERSION, "nc"]
-        # )
-
         with open(model) as f:
             lines = f.readlines()
-            elevfile = os.path.join(os.path.dirname(model), lines[0].split('/')[-1]).strip()
-            curfile = os.path.join(os.path.dirname(model), lines[1].split('/')[-1]).strip()
-            self.gridfile = os.path.join(os.path.dirname(model), lines[2].split('/')[-1]).strip()
+            elevfile = os.path.join(
+                os.path.dirname(model), lines[0].split("/")[-1]
+            ).strip()
+            curfile = os.path.join(
+                os.path.dirname(model), lines[1].split("/")[-1]
+            ).strip()
+            self.gridfile = os.path.join(
+                os.path.dirname(model), lines[2].split("/")[-1]
+            ).strip()
 
         dsg = xr.open_dataset(self.gridfile)
         dsh = xr.open_dataset(elevfile)
@@ -162,7 +161,10 @@ class NCOtis(object):
                     self.ds["{}{}".format(node.upper(), com)].dims,
                     self.ds["{}{}".format(node.upper(), com)].values
                     / self.ds["h{}".format(node)].values,
-                    attrs=dict(long_name=longname.format(c=com, n=node.upper()), units="meter/s"),
+                    attrs=dict(
+                        long_name=longname.format(c=com, n=node.upper()),
+                        units="meter/s",
+                    ),
                 )
 
         self.ds = self.ds.assign(variables=variables)
@@ -294,7 +296,9 @@ class NCOtis(object):
                     )
 
 
-def predict_tide_grid(lon, lat, time, modfile, conlist=None):
+def predict_tide_grid(
+    lon, lat, time, modfile="/data/tide/otis_netcdf/Model_tpxo9", conlist=None
+):
     """ Performs a tidal prediction at all points in [lon,lat] at times.
 
 	Args:
@@ -315,12 +319,11 @@ def predict_tide_grid(lon, lat, time, modfile, conlist=None):
                                 Available are 'M2', 'S2', 'N2', 'K2', 'K1', 'O1', 'P1', 'Q1'
 
 	Returns
-	-------
-	h : m-by-n numpy array of tidal heights
-		height is in meters, times are along the rows, and positions along
-		the columns
-	u : m-by-n numpy array of east-west tidal velocity [m/s]
-	v : m-by-n numpy array of north tidal velocity [m/s]
+	xarray.Dataset containing:
+	    et : m-by-n numpy array of tidal heights
+		     height is in meters
+	    ut : m-by-n numpy array of eastward tidal velocity [m/s]
+	    vt : m-by-n numpy array of northward tidal velocity [m/s]
 
 	Examples
 	--------
@@ -331,92 +334,134 @@ def predict_tide_grid(lon, lat, time, modfile, conlist=None):
 	lon = np.array([198, 199])
 	lat = np.array([21, 19])
 
-	h, u, v = predict_tide_grid(lon, lat, time, '/data/tide/otis_netcdf/Model_ES2008') TODO: make it a netcdf file
-
+	ds = predict_tide_grid(lon, lat, time) 
 	"""
+    # TODO: make it work on top of zarr / intake
+
     otis = NCOtis(modfile, x0=lon.min(), x1=lon.max(), y0=lat.min(), y1=lat.max())
-    # print("Flooding land to avoid interpolation noise")
-    # otis.flood()
+    print("Flooding land to avoid interpolation noise")
+    otis.flood()
     conlist = conlist or otis.cons
     omega = [OMEGA[c] for c in conlist]
 
     # Nodal correction: nodal needs days since 1992:
-    days = (time[0] - np.datetime64('1992-01-01', 'D')).days
-    pu, pf, v0u = nodal(days + 48622.0, conlist) # not sure where 48622.0 comes from ???
+    days = (time[0] - np.datetime64("1992-01-01", "D")).days
+    pu, pf, v0u = nodal(
+        days + 48622.0, conlist
+    )  # not sure where 48622.0 comes from ???
 
     # interpolating to requested grid
     print("Interpolating variables to requested grid")
-    hRe, hIm, uRe, uIm, vRe, vIm = _regrid(otis, lon, lat)
-    hRe, hIm, uRe, uIm, vRe, vIm = _remask(hRe, hIm, uRe, uIm, vRe, vIm, otis, lon, lat)
+    cvars = _regrid(otis, lon, lat)
+    cvars = _remask(cvars, otis, lon, lat)
 
     # Calculate the time series
-    tsec = np.array((time - np.datetime64('1992-01-01', 's')).total_seconds())
-    nt = time.size 
+    tsec = np.array((time - np.datetime64("1992-01-01", "s")).total_seconds())
+    nt = time.size
     nc = len(conlist)
     nj, ni = lon.shape
 
-    hRe = hRe.reshape((nc, nj * ni))
-    hIm = hIm.reshape((nc, nj * ni))
-    uRe = uRe.reshape((nc, nj * ni))
-    uIm = uIm.reshape((nc, nj * ni))
-    vRe = vRe.reshape((nc, nj * ni))
-    vIm = vIm.reshape((nc, nj * ni))
+    for varname, var in cvars.items():
+        cvars[varname] = var.reshape((nc, nj * ni))
 
-    h, u, v = np.zeros((nt, nj * ni)), np.zeros((nt, nj * ni)), np.zeros((nt, nj * ni))
+    rvars = dict()
+    for var in ["h", "u", "v"]:
+        rvars[var] = np.zeros((nt, nj * ni))
 
     for k, om in enumerate(omega):
         for idx in range(nj * ni):
-            h[:, idx] += pf[k] * hRe[k, idx] * np.cos(om * tsec + v0u[k] + pu[k]) - pf[k] * hIm[k, idx] * np.sin(om * tsec + v0u[k] + pu[k])
-            u[:, idx] += pf[k] * uRe[k, idx] * np.cos(om * tsec + v0u[k] + pu[k]) - pf[k] * uIm[k, idx] * np.sin(om * tsec + v0u[k] + pu[k])
-            v[:, idx] += pf[k] * vRe[k, idx] * np.cos(om * tsec + v0u[k] + pu[k]) - pf[k] * vIm[k, idx] * np.sin(om * tsec + v0u[k] + pu[k])
+            for p in ["h", "u", "v"]:
+                rvars[p][:, idx] += pf[k] * cvars["{}Re".format(p)][k, idx] * np.cos(
+                    om * tsec + v0u[k] + pu[k]
+                ) - pf[k] * cvars["{}Im".format(p)][k, idx] * np.sin(
+                    om * tsec + v0u[k] + pu[k]
+                )
 
-    # TODO: write netcdf file and refactor using dicts to respect DRY
-    h, u, v = h.reshape((nt, nj, ni)), u.reshape((nt, nj, ni)), v.reshape((nt, nj, ni))
+    for varname, var in rvars.items():
+        rvars[varname] = var.reshape((nt, nj, ni))
 
-    # TODO: write variable attributes
-    ha = xr.DataArray(dims=('time', 'lat', 'lon'), coords={'time': time, 'lat': lat[:,0], 'lon': lon[0,...]}, name='et', data=h)
-    ua = xr.DataArray(dims=('time', 'lat', 'lon'), coords={'time': time, 'lat': lat[:,0], 'lon': lon[0,...]}, name='ut', data=u)
-    va = xr.DataArray(dims=('time', 'lat', 'lon'), coords={'time': time, 'lat': lat[:,0], 'lon': lon[0,...]}, name='vt', data=v)
-    ds = xr.Dataset({'et': ha, 'ut': ua, 'vt': va})
+    rvars = _remask(rvars, otis, lon, lat)
+    fill_value = rvars["u"].fill_value
 
+    for varname, var in rvars.items():
+        rvars[varname] = var.filled(var.fill_value)
+
+    ha = xr.DataArray(
+        dims=("time", "lat", "lon"),
+        coords={"time": time, "lat": lat[:, 0], "lon": lon[0, ...]},
+        name="et",
+        data=rvars["h"],
+        attrs={
+            "standard_name": "tidal_sea_surface_height_above_mean_sea_level",
+            "units": "m",
+            "_FillValue": fill_value,
+        },
+    )
+    ua = xr.DataArray(
+        dims=("time", "lat", "lon"),
+        coords={"time": time, "lat": lat[:, 0], "lon": lon[0, ...]},
+        name="ut",
+        data=rvars["u"],
+        attrs={
+            "standard_name": "eastward_sea_water_velocity_due_to_tides",
+            "units": "m s^-1",
+            "_FillValue": fill_value,
+        },
+    )
+    va = xr.DataArray(
+        dims=("time", "lat", "lon"),
+        coords={"time": time, "lat": lat[:, 0], "lon": lon[0, ...]},
+        name="vt",
+        data=rvars["v"],
+        attrs={
+            "standard_name": "northward_sea_water_velocity_due_to_tides",
+            "units": "m s^-1",
+            "_FillValue": fill_value,
+        },
+    )
+    ds = xr.Dataset({"et": ha, "ut": ua, "vt": va})
 
     return ds
 
 
-def _remask(hRe, hIm, uRe, uIm, vRe, vIm, otis, lon, lat):
+def _remask(_vars, otis, lon, lat):
+    for val in _vars.values():
+        a, b, c = val.shape
+        break
+
     depth = _interp(otis.ds.hz, otis.ds.lon_z, otis.ds.lat_z, lon.ravel(), lat.ravel())
-    depth = depth.reshape(lon.shape)[None, :].repeat(len(otis.cons), axis=0)
-    hRe = np.ma.masked_where(depth < 1, hRe)
-    hIm = np.ma.masked_where(depth < 1, hIm)
-    uRe = np.ma.masked_where(depth < 1, uRe)
-    uIm = np.ma.masked_where(depth < 1, uIm)
-    vRe = np.ma.masked_where(depth < 1, vRe)
-    vIm = np.ma.masked_where(depth < 1, vIm)
-    return hRe, hIm, uRe, uIm, vRe, vIm
+    depth = depth.reshape(lon.shape)[None, :].repeat(a, axis=0)
+    newlist = []
+    for varname, var in _vars.items():
+        _vars[varname] = np.ma.masked_where(depth < 1, var)
+
+    return _vars
 
 
 def _regrid(otis, lon, lat):
     nj, ni = lon.shape
     nc = len(otis.cons)
-    hRe = np.zeros((nc, nj * ni))
-    hIm = np.zeros((nc, nj * ni))
-    uRe = np.zeros((nc, nj * ni))
-    uIm = np.zeros((nc, nj * ni))
-    vRe = np.zeros((nc, nj * ni))
-    vIm = np.zeros((nc, nj * ni))
+    cvars = dict()
+    for var in COMPLEX_VARS:
+        cvars[var] = np.zeros((nc, nj * ni))
 
     for idx in range(nc):
-        hRe[idx, :] = _interp(otis.ds.hRe[idx,...], otis.ds.lon_z, otis.ds.lat_z, lon.ravel(), lat.ravel())
-        hIm[idx, :] = _interp(otis.ds.hIm[idx,...], otis.ds.lon_z, otis.ds.lat_z, lon.ravel(), lat.ravel())
-        uRe[idx, :] = _interp(otis.ds.uRe[idx,...], otis.ds.lon_z, otis.ds.lat_z, lon.ravel(), lat.ravel())
-        uIm[idx, :] = _interp(otis.ds.uIm[idx,...], otis.ds.lon_z, otis.ds.lat_z, lon.ravel(), lat.ravel())
-        vRe[idx, :] = _interp(otis.ds.vRe[idx,...], otis.ds.lon_z, otis.ds.lat_z, lon.ravel(), lat.ravel())
-        vIm[idx, :] = _interp(otis.ds.vIm[idx,...], otis.ds.lon_z, otis.ds.lat_z, lon.ravel(), lat.ravel())
+        for varname, var in cvars.items():
+            p = 'z' if 'h' in varname else varname[0] # because OTIS doesn't follow conventions :/
+            var[idx, :] = _interp(
+                otis.ds.data_vars[varname][idx, ...],
+                otis.ds.data_vars["lon_{}".format(p)],
+                otis.ds.data_vars["lat_{}".format(p)],
+                lon.ravel(),
+                lat.ravel(),
+            )
 
     s = (nc,) + lon.shape
-    
-    return hRe.reshape(s), hIm.reshape(s), uRe.reshape(s), uIm.reshape(s), vRe.reshape(s), vIm.reshape(s)
- 
+    for varname in cvars.keys():
+        cvars[varname] = cvars[varname].reshape(s)
+
+    return cvars
+
 
 def _interp(arr, x, y, x2, y2):
     arr, x, y = arr.values, x.values, y.values
@@ -425,19 +470,19 @@ def _interp(arr, x, y, x2, y2):
     return spl(x2, y2, grid=False)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import pandas as pd
     import datetime as dt
 
     # English Channel
-    xi = np.linspace(-1, 4, 50) 
+    xi = np.linspace(-1, 4, 50)
     yi = np.linspace(48.5, 53.56, 53)
 
     # Hauraki Gulf
-    xi = np.linspace(173.8282, 176.6906, 50) 
+    xi = np.linspace(173.8282, 176.6906, 50)
     yi = np.linspace(-38.3221, -35.1955, 53)
 
-    lon, lat = np.meshgrid(xi, yi) 
+    lon, lat = np.meshgrid(xi, yi)
     time = pd.date_range(dt.datetime(2001, 1, 1), dt.datetime(2001, 1, 7, 23), freq="H")
-    modfile = '/data/tide/otis_netcdf/Model_tpxo7'
-    h, u, v = predict_tide_grid(lon, lat, time, modfile)
+    modfile = "/data/tide/otis_netcdf/Model_tpxo9"
+    ds = predict_tide_grid(lon, lat, time, modfile)
