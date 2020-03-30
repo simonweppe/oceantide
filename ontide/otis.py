@@ -5,9 +5,9 @@
 import os
 import numpy as np
 from scipy import interpolate
+import netCDF4
 import xarray as xr
 from fsspec import filesystem, get_mapper
-import pyroms
 from .core import nodal, astrol
 from .constituents import OMEGA
 
@@ -51,7 +51,7 @@ class NCOtis(object):
             curfile = os.path.join(
                 os.path.dirname(model), lines[1].split("/")[-1]
             ).strip()
-            self.gridfile = os.path.join(
+            self.gfile = os.path.join(
                 os.path.dirname(model), lines[2].split("/")[-1]
             ).strip()
 
@@ -313,7 +313,7 @@ def predict_tide_grid(
                                 Lat ranges from -90 to 90. Lon can range from -180 to 360.
   	time:                     m-length array of times.  Acceptable formats are 
                                 a list of `datetime` objects, a list or array of 
-                                `numpy.datetime64` objects, or pandas date_range
+                                `np.datetime64` objects, or pandas date_range
 	conlist :                 List of strings (optional). If supplied, gives a list 
                                 of tidal constituents to include in prediction. 
                                 Available are 'M2', 'S2', 'N2', 'K2', 'K1', 'O1', 'P1', 'Q1'
@@ -469,6 +469,154 @@ def _interp(arr, x, y, x2, y2):
     spl = interpolate.RectBivariateSpline(x[0, :], y[:, 0], arr.T)
     return spl(x2, y2, grid=False)
 
+
+def bin2nc(gfile, hfile, uvfile, outfile, dmin=1.0, forward=False):
+    """ Converts OTIS binary files to netcdf. To be used when running inverse model
+        internally, as it only supports OTIS binary format.
+        TODO - at the moment netcdf is on UDS conventions, should be on OTIS netcdf convention
+               TIP: use the NCOtis object to help with writting the netcdf
+
+	Args:
+	
+	gfile (str):    Path of the constituents model grid on your file system
+                        files must be in OTIS binary grid format
+	hfile (str):    Path of the elevations constituents file 
+    uvifle (str):   Path of the currents constituents file
+    outfile (str):  Path of the output netcdf file
+
+	Returns
+	    netcdf file in outfile path
+	    
+	Examples
+	--------
+
+    bin2nc('/path/gridES', '/path/h0.es.out', '/path/u0.es.out', '/path/cons.nc')
+	"""
+    
+    INT = np.dtype(">i4")
+    FLOAT = np.dtype(">f4")
+    CHAR = np.dtype(">c")
+    EOR = np.dtype(">i8")
+    
+    cdir = os.path.dirname(gfile)
+
+    with open(hfile, "rb") as f:
+        ll = np.fromfile(f, INT, 1)[0]
+        nlat = np.fromfile(f, INT, 1)[0]
+        nlon = np.fromfile(f, INT, 1)[0]
+        ncons = np.fromfile(f, INT, 1)[0]
+        gridbound = np.fromfile(f, FLOAT, 4)
+        cid = []
+        for i in range(ncons):
+            scons = np.fromfile(f, CHAR, 4).tostring().upper()
+            cid.append(scons.rstrip())
+        eor = np.fromfile(f, FLOAT, 2)
+
+        nn = nlon * nlat
+        h = []
+        for i in range(ncons):
+            htemp = np.fromfile(f, FLOAT, 2 * nn)
+            h.append(np.reshape(htemp[::2] + 1j * htemp[1::2], (nlat, nlon)))
+
+    with open(gfile, "rb") as fid:
+        dum = np.fromfile(fid, FLOAT, 1)
+        m = np.fromfile(fid, INT, 1)[0]
+        n = np.fromfile(fid, INT, 1)[0]
+        lats = np.fromfile(fid, FLOAT, 2)
+        lons = np.fromfile(fid, FLOAT, 2)
+        if (lons[0] < 0) & (lons[1] < 0):
+            lons = lons + 360
+        dt = np.fromfile(fid, FLOAT, 1)[0]
+        nob = np.fromfile(fid, INT, 1)[0]
+        if nob == 0:
+            dum = np.fromfile(fid, FLOAT, 5)
+            iob = []
+        else:
+            dum = np.fromfile(fid, FLOAT, 2)
+            iob = np.fromfile(fid, INT, 2 * nob)
+            iob = np.reshape(iob, (2, nob))
+            dum = np.fromfile(fid, FLOAT, 2)
+
+        hz = np.fromfile(fid, FLOAT, n * m)
+        dd = np.maximum(np.reshape(hz, (n, m)), dmin)
+        dum = np.fromfile(fid, FLOAT, 2)
+        mz = np.fromfile(fid, INT, n * m)
+        lm = np.reshape(mz, (n, m))
+
+    dx = (lons[1] - lons[0]) / m
+    dy = (lats[1] - lats[0]) / n
+
+    with open(uvfile, "rb") as f:
+        ll = np.fromfile(f, INT, 1)
+        nlon = np.fromfile(f, INT, 1)[0]
+        nlat = np.fromfile(f, INT, 1)[0]
+        ncons = np.fromfile(f, INT, 1)[0]
+        gridbound = np.fromfile(f, FLOAT, 4)
+        cid = []
+        for i in range(ncons):
+            scons = np.fromfile(f, CHAR, 4).tostring().upper()
+            cid.append(scons.rstrip())
+        eor = np.fromfile(f, EOR, 1)
+
+        uu = []
+        vv = []
+        for i in range(ncons):
+            cin = np.fromfile(f, FLOAT, 4 * nn)
+            eor = np.fromfile(f, EOR, 1)
+            u = np.reshape(cin[::4] + 1j * cin[1::4], (nlat, nlon))
+            v = np.reshape(cin[2::4] + 1j * cin[3::4], (nlat, nlon))
+
+            u = u * lm
+            v = v * lm
+            u[:, 1:] = u[:, 1:] * lm[:, :-1]
+            v[1:, :] = v[1:, :] * lm[:-1, :]
+
+            uflux = 0.5 * u
+            vflux = 0.5 * v
+            uflux[:, :-1] += 0.5 * u[:, 1:]
+            vflux[:-1, :] += 0.5 * v[1:, :]
+
+            uflux[uflux == 0] = np.nan
+            vflux[vflux == 0] = np.nan
+
+            uu.append(uflux / dd)
+            vv.append(vflux / dd)
+
+        nc = netCDF4.Dataset(outfile, "w", format="NETCDF4")
+
+        dim_ncons = nc.createDimension("ncons", 2)
+        dim_cons = nc.createDimension("cons", ncons)
+        dim_lon = nc.createDimension("lon", nlon)
+        dim_lat = nc.createDimension("lat", nlat)
+
+        lons = nc.createVariable("lon", "f4", ("lon"))
+        lats = nc.createVariable("lat", "f4", ("lat"))
+
+        lons[:] = np.arange(gridbound[2] + dx / 2, gridbound[3], dx)
+        lats[:] = np.arange(gridbound[0] + dy / 2, gridbound[1], dy)
+
+        cons = nc.createVariable("cons", "S1", ("cons", "ncons"))
+        for i in range(ncons):
+            cons[i] = netCDF4.stringtochar(np.array(cid[i]))
+
+        e_amp = nc.createVariable("e_amp", "f", ("cons", "lat", "lon"))
+        e_pha = nc.createVariable("e_pha", "f", ("cons", "lat", "lon"))
+        u_amp = nc.createVariable("u_amp", "f", ("cons", "lat", "lon"))
+        u_pha = nc.createVariable("u_pha", "f", ("cons", "lat", "lon"))
+        v_amp = nc.createVariable("v_amp", "f", ("cons", "lat", "lon"))
+        v_pha = nc.createVariable("v_pha", "f", ("cons", "lat", "lon"))
+        dep = nc.createVariable("dep", "f", ("lat", "lon"))
+        dep[:] = dd
+
+        for i in range(ncons):
+            e_amp[i] = np.absolute(h[i])
+            e_pha[i] = -np.angle(h[i])
+            u_amp[i] = np.absolute(uu[i])
+            u_pha[i] = -np.angle(uu[i])
+            v_amp[i] = np.absolute(vv[i])
+            v_pha[i] = -np.angle(vv[i])
+
+        nc.close()
 
 if __name__ == "__main__":
     import pandas as pd
