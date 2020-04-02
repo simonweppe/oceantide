@@ -55,7 +55,7 @@ class NCOtis(object):
                 os.path.dirname(model), lines[2].split("/")[-1]
             ).strip()
 
-        dsg = xr.open_dataset(self.gridfile)
+        dsg = xr.open_dataset(self.gfile)
         dsh = xr.open_dataset(elevfile)
         dsu = xr.open_dataset(curfile)
 
@@ -87,7 +87,7 @@ class NCOtis(object):
 
     def __repr__(self):
         _repr = "<OTIS {} nc={} x0={:0.2f} x1={:0.2f} y0={:0.2f} y1={:0.2f} subset={}>".format(
-            self.gridfile,
+            self.gfile,
             self.ds.dims["nc"],
             self.ds.lon_z.values.min(),
             self.ds.lon_z.values.max(),
