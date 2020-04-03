@@ -298,7 +298,12 @@ class NCOtis(object):
 
 
 def predict_tide_grid(
-    lon, lat, time, modfile="/data/tide/otis_netcdf/Model_tpxo9", conlist=None, outfile=None,
+    lon,
+    lat,
+    time,
+    modfile="/data/tide/otis_netcdf/Model_tpxo9",
+    conlist=None,
+    outfile=None,
 ):
     """ Performs a tidal prediction at all points in [lon,lat] at times.
 
@@ -318,6 +323,7 @@ def predict_tide_grid(
 	conlist :                 List of strings (optional). If supplied, gives a list 
                                 of tidal constituents to include in prediction. 
                                 Available are 'M2', 'S2', 'N2', 'K2', 'K1', 'O1', 'P1', 'Q1'
+    outfile:                  Writes xarray.Dataset to disk as a NetCDF file
 
 	Returns
 	xarray.Dataset containing:
@@ -451,7 +457,9 @@ def _regrid(otis, lon, lat):
 
     for idx in range(nc):
         for varname, var in cvars.items():
-            p = 'z' if 'h' in varname else varname[0] # because OTIS doesn't follow conventions :/
+            p = (
+                "z" if "h" in varname else varname[0]
+            )  # because OTIS doesn't follow conventions :/
             var[idx, :] = _interp(
                 otis.ds.data_vars[varname][idx, ...],
                 otis.ds.data_vars["lon_{}".format(p)],
@@ -496,12 +504,12 @@ def bin2nc(gfile, hfile, uvfile, outfile, dmin=1.0, forward=False):
 
     bin2nc('/path/gridES', '/path/h0.es.out', '/path/u0.es.out', '/path/cons.nc')
 	"""
-    
+
     INT = np.dtype(">i4")
     FLOAT = np.dtype(">f4")
     CHAR = np.dtype(">c")
     EOR = np.dtype(">i8")
-    
+
     cdir = os.path.dirname(gfile)
 
     with open(hfile, "rb") as f:
@@ -621,6 +629,7 @@ def bin2nc(gfile, hfile, uvfile, outfile, dmin=1.0, forward=False):
             v_pha[i] = -np.angle(vv[i])
 
         nc.close()
+
 
 if __name__ == "__main__":
     import pandas as pd
