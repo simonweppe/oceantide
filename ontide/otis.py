@@ -7,6 +7,7 @@ import numpy as np
 from scipy import interpolate
 import netCDF4
 import xarray as xr
+import pyroms
 from fsspec import filesystem, get_mapper
 from .core import nodal, astrol
 from .constituents import OMEGA
@@ -70,6 +71,7 @@ class NCOtis(object):
             dsu = dsu.drop(["Ua", "ua", "up", "Va", "va", "vp"])
 
         self.ds = xr.merge([dsg, dsh, dsu])
+        self._fix_east()
 
         # if subset is requested, better to run it before any operation
         if np.array([x0, x1, y0, y1]).any() is not None:
@@ -81,7 +83,6 @@ class NCOtis(object):
             self.was_subsetted = False
 
         self._fix_topo()
-        self._fix_east()
         self._mask_vars()
         self._transp2vel()
 
@@ -297,7 +298,7 @@ class NCOtis(object):
 
 
 def predict_tide_grid(
-    lon, lat, time, modfile="/data/tide/otis_netcdf/Model_tpxo9", conlist=None
+    lon, lat, time, modfile="/data/tide/otis_netcdf/Model_tpxo9", conlist=None, outfile=None,
 ):
     """ Performs a tidal prediction at all points in [lon,lat] at times.
 
@@ -420,6 +421,9 @@ def predict_tide_grid(
         },
     )
     ds = xr.Dataset({"et": ha, "ut": ua, "vt": va})
+
+    if outfile:
+        ds.to_netcdf(outfile)
 
     return ds
 
