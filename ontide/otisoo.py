@@ -11,11 +11,12 @@ from ondata.download.gebco import get_gebco
 from ontide.otis import bin2nc
 
 
+BUCKET = 'oceanum-tide'
 ROOTDIR = os.path.abspath("../otisoo")
 RUNDIR = "/tmp/otisoo"
 DIRTREE = ["exe", "dat", "prm", "repx1", "out", "bathy"]
 DBDIR = "/data/tide/otis_binary/DB"
-BUCKET = 'oceanum-tide'
+DBBLOB = 'otisoo/DB'
 
 os.environ.update(
     {
@@ -39,7 +40,11 @@ class OTISoo(object):
                 x0, x1, y0, y1 (float)   ::  domain corners (only regular grid supported)
                 dx, dy (float)           ::  resolution (preferably dx == dy)
                 bnd (str)                ::  path for the OTIS binary that will serve as a parent model
-                outfile (str)            ::  path for the output cons zarr file
+                outfile (str)            ::  path for the output cons zarr file. 
+                                             IMPORTANT: if "gs" is in the pathname, 
+                                             the zarr file will become operational, which means:
+                                                 - will be uploaded to the operational bucket that contains gridded cons files
+                                                 - will be registered as a new grid in the cons bounds BQ table 
                 gcp_sa (str)             ::  GCP service account json file (when interaction with GCP resources is needed)
 
             Developer notes:
@@ -53,22 +58,27 @@ class OTISoo(object):
 
     
     def _set_environment(self):
-        pass
+        self.get_otis_bin()
 
     
-    def auth_storage(self):
+    def _auth_storage(self):
         assert self.gcp_sa != None, "gcp_sa argument with GCP service account json file must be provided for this method"
         self.storage_client = storage.Client.from_service_account_json(self.gcp_sa)
+        self.bucket = storage.Bucket(self.storage_client, name=BUCKET)
 
     
-    def auth_bigquery(self):
+    def _auth_bigquery(self):
         assert self.gcp_sa != None, "gcp_sa argument with GCP service account json file must be provided for this method"
         self.bq_client = bigquery.Client.from_service_account_json(self.gcp_sa)
 
 
     def get_otis_bin(self):
         if not os.path.isdir(DBDIR):
-            self.auth_storage()
+            logging.info("OTISoo binaries not available locally, pulling from bucket")
+            self._auth_storage()
+            blob = self.bucket.get_blob(DBBLOB)
+            blob.download_to_filename(DBDIR)
+
 
 
 
