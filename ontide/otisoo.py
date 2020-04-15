@@ -1,0 +1,148 @@
+# -*- coding: utf-8 -*-
+"""OTISoo tools.
+  
+   Tools to interact with OTIS tidal inverse numerical model
+"""
+
+import os, shutil, glob, logging
+import numpy as np
+from google.cloud import storage, bigquery
+from ondata.download.gebco import get_gebco
+from ontide.otis import bin2nc
+
+
+ROOTDIR = os.path.abspath("../otisoo")
+RUNDIR = "/tmp/otisoo"
+DIRTREE = ["exe", "dat", "prm", "repx1", "out", "bathy"]
+DBDIR = "/data/tide/otis_binary/DB"
+BUCKET = 'oceanum-tide'
+
+os.environ.update(
+    {
+        "GOOGLE_APPLICATION_CREDENTIALS": os.path.join(
+            ROOTDIR, "secrets/api-wavespectra.json"
+        )
+    }
+)
+
+storage_client = storage.Client.from_service_account_json(
+    os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+)
+
+
+class OTISoo(object):
+    def __init__(self, dataset_id, x0, x1, y0, y1, dx=0.01, dy=0.01, bnd='/data/tide/otis_binary/h_tpxo9', outfile=None, gcp_sa=None):
+        """ Run OTISoo inverse tidal model
+
+            Args:
+                dataset_id (str)         ::  name for the regional cons file
+                x0, x1, y0, y1 (float)   ::  domain corners (only regular grid supported)
+                dx, dy (float)           ::  resolution (preferably dx == dy)
+                bnd (str)                ::  path for the OTIS binary that will serve as a parent model
+                outfile (str)            ::  path for the output cons zarr file
+                gcp_sa (str)             ::  GCP service account json file (when interaction with GCP resources is needed)
+
+            Developer notes:
+                - bnd should default to None and be automatically detected based on a BQ table with cached 
+                    corners for each of the downscaled grids
+                
+        """
+        self.localdir = os.path.join(RUNDIR, dataset_id)
+        self.outfile = outfile or f"gs://oceanum-tide/gridcons/{dataset_id}.zarr"
+        self.gcp_sa = gcp_sa
+
+    
+    def _set_environment(self):
+        pass
+
+    
+    def auth_storage(self):
+        assert self.gcp_sa != None, "gcp_sa argument with GCP service account json file must be provided for this method"
+        self.storage_client = storage.Client.from_service_account_json(self.gcp_sa)
+
+    
+    def auth_bigquery(self):
+        assert self.gcp_sa != None, "gcp_sa argument with GCP service account json file must be provided for this method"
+        self.bq_client = bigquery.Client.from_service_account_json(self.gcp_sa)
+
+
+    def get_otis_bin(self):
+        if not os.path.isdir(DBDIR):
+            self.auth_storage()
+
+
+
+# SET ENVIRONMENT (replaces "crd" from OTISoo) ###########################################################
+print("Setting the environment")
+if os.path.isdir(localdir):
+    shutil.rmtree(localdir)
+
+os.makedirs(localdir)
+
+for _dir in DIRTREE:
+    os.makedirs(os.path.join(localdir, _dir))
+
+shutil.copyfile(
+    os.path.join(ROOTDIR, "config/run_param"),
+    os.path.join(localdir, "exe/run_param"),
+)
+
+for _file in glob.glob(os.path.join(ROOTDIR, "config/prm/*")):
+    shutil.copyfile(_file, os.path.join(localdir, f"prm/{os.path.basename(_file)}"))
+
+# the below is pretty annoying as the DB files are hardcoded in the fortran code as ../../../DB/{_file}
+if not os.path.isdir('/tmp/DB'):
+    shutil.copytree(DBDIR, "/tmp/DB")
+
+# ------------------------------------------------------------------------------------------
+
+## BATHY ####################################################################################
+print("Creating bathy and OTISoo grid")
+
+ds = get_gebco(x0=x0, x1=x1, y0=y0, y1=y1, dx=res, dy=res, vmin=-9, masked=True).load()
+
+x, y = np.meshgrid(ds.lon.values, ds.lat.values)
+
+y, x, h = y.ravel(), x.ravel(), ds.depth.values.ravel()
+h[np.isnan(h) == 1] = 2
+h[h < 2] = 2  # min depth required to be 2m by OTISoo
+dat = np.vstack((y, x, h)).T
+print(dat[:5, :])
+
+with open(f"{RUNDIR}/{dataset_id}/bathy/bathy.dat", "w", encoding="utf-8") as f:
+    for line in range(dat.shape[0]):
+        txt = "{:3.6f} {:3.6f} {}\n".format(
+            dat[line, 0], dat[line, 1], int(dat[line, 2])
+        )
+        f.write(txt)
+
+# INVERSE MODEL ############################################################################
+# replaces run_otis_fwd.sh
+print("Running OTISoo inverse model")
+
+for _file in glob.glob(os.path.join(ROOTDIR, "bin/*")):
+    os.symlink(_file, os.path.join(localdir, f"exe/{os.path.basename(_file)}"))
+
+os.chdir(os.path.join(localdir, "exe"))
+os.system("./mk_grid -l../bathy/bathy.dat")
+os.system(f"./ob_eval -M{bnd}")
+os.system(f"./Fwd_fac")
+
+# CONVERT TO NETCDF ########################################################################
+print("Converting to NetCDF")
+
+bin2nc(
+    os.path.join(localdir, "prm/grid"),
+    os.path.join(localdir, "out/h0.df.out"),
+    os.path.join(localdir, "out/u0.df.out"),
+    outfile,
+)
+
+
+if __name__ = '__main__':
+    x0, x1, y0, y1 = 0.2527, 2.4829, 50.05, 51.4882
+    dx, dy = 0.01, 0.01
+    dataset_id = "english_channel"
+    
+    bnd = "/data/tide/otis_binary/hf.ES2008.out"  
+    outfile = "/data/tidecons/echannel.nc"
