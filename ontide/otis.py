@@ -482,7 +482,7 @@ def _interp(arr, x, y, x2, y2):
     return spl(x2, y2, grid=False)
 
 
-def bin2xr(gfile, hfile, uvfile, dmin=1.0, write_to=None, outfile=None):
+def bin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
     """ Converts OTIS binary files to xarray.Dataset. To be used when running inverse model
         internally, as it only supports OTIS binary format.
         TODO 
@@ -496,9 +496,7 @@ def bin2xr(gfile, hfile, uvfile, dmin=1.0, write_to=None, outfile=None):
                             files must be in OTIS binary grid format
         hfile (str):     Path of the elevations constituents file 
         uvifle (str):    Path of the currents constituents file
-        outfile (str):   Path of the output netcdf file
-                            Default = None just returns xarray.Dataset
-        write_to (str):  Format to write to disk: 'netcdf' or 'zarr'. 
+        outfile (str):   Path of the output file (must have '.nc' or '.zarr. extension)
                             Default = None just returns xarray.Dataset
 
 	Returns
@@ -510,8 +508,6 @@ def bin2xr(gfile, hfile, uvfile, dmin=1.0, write_to=None, outfile=None):
 
     bin2xr('/path/gridES', '/path/h0.es.out', '/path/u0.es.out', write_to='netcdf', outfile='/path/cons.nc')
 	"""
-    if write_to != None or outfile != None:
-        assert outfile != None and write_to != None, "both [outfile] and [write_to] must be provided"
 
     INT = np.dtype(">i4")
     FLOAT = np.dtype(">f4")
@@ -602,7 +598,7 @@ def bin2xr(gfile, hfile, uvfile, dmin=1.0, write_to=None, outfile=None):
             uu.append(uflux / dd)
             vv.append(vflux / dd)
 
-        #  a bit of a hack before we port to xarray
+        # a bit of a hack before we port to xarray, but needs more smarts in case it comes as a bucket URL
         nc = netCDF4.Dataset(outfile.replace('.zarr', '.nc'), "w", format="NETCDF4")
 
         dim_ncons = nc.createDimension("ncons", 2)
@@ -641,7 +637,7 @@ def bin2xr(gfile, hfile, uvfile, dmin=1.0, write_to=None, outfile=None):
     
         #  a bit of a hack before we port to xarray
         ds = xr.open_dataset(outfile)
-        if write_to == 'zarr':
+        if outfile.split('.')[-1] == 'zarr':
             ds.to_zarr(get_mapper(outfile))
 
         return ds

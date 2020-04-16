@@ -111,14 +111,12 @@ class OTISoo(object):
         os.system(f"./ob_eval -M{self.bnd}")
         os.system(f"./Fwd_fac")
         
-        logging.info("Saving {self.outfile}")
-        ext = self.outfile.split('.')[-1]
+        logging.info("Writting to {self.outfile}")
         bin2xr(
             os.path.join(self.localdir, "prm/grid"),
             os.path.join(self.localdir, "out/h0.df.out"),
             os.path.join(self.localdir, "out/u0.df.out"),
             outfile,
-            write_to=ext
         )
 
     def _set_environment(self):
