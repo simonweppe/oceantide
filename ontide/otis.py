@@ -520,7 +520,7 @@ def bin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
                             files must be in OTIS binary grid format
         hfile (str):     Path of the elevations constituents file 
         uvifle (str):    Path of the currents constituents file
-        outfile (str):   Path of the output file (must have '.nc' or '.zarr. extension)
+        outfile (str):   Path of the output file (must have '.nc' or '.zarr' extension)
                             Default = None just returns xarray.Dataset
 
 	Returns

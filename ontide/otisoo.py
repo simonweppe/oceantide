@@ -31,7 +31,10 @@ class OTISoo(object):
                                             IMPORTANT: if "gs" is in the pathname, 
                                             the zarr file will become operational, which means:
                                                 - will be uploaded to the operational bucket that contains gridded cons files
+                                                - TODO: need to think about how we make intake catalog in sync with the above
                                                 - will be registered as a new grid in the cons bounds BQ table 
+                                            If left blank, bucket blob name will be assenmbled automatically according to 
+                                            default settings
             gcp_sa (str)             ::  GCP service account json file (when interaction with GCP resources is needed)
 
         Examples
@@ -165,27 +168,5 @@ class OTISoo(object):
             blob.download_to_filename(DBDIR)
 
 
-## BATHY ####################################################################################
 
 
-# INVERSE MODEL ############################################################################
-
-
-# CONVERT TO NETCDF ########################################################################
-logging.info("Converting to NetCDF")
-
-bin2nc(
-    os.path.join(self.localdir, "prm/grid"),
-    os.path.join(self.localdir, "out/h0.df.out"),
-    os.path.join(self.localdir, "out/u0.df.out"),
-    outfile,
-)
-
-
-if __name__ == "__main__":
-    x0, x1, y0, y1 = 0.2527, 2.4829, 50.05, 51.4882
-    dx, dy = 0.01, 0.01
-    dataset_id = "english_channel"
-
-    bnd = "/data/tide/otis_binary/hf.ES2008.out"
-    outfile = "/data/tidecons/echannel.nc"
