@@ -103,8 +103,9 @@ class OTISoo(object):
                 f.write(txt)
 
     def run(self):
-        # replaces run_otis_fwd.sh
         logging.info("Running OTISoo inverse model")
+        self._set_environment()
+        self.make_bathy()
 
         for _file in glob.glob(os.path.join(ROOTDIR, "bin/*")):
             os.symlink(_file, os.path.join(self.localdir, f"exe/{os.path.basename(_file)}"))
@@ -119,7 +120,7 @@ class OTISoo(object):
             os.path.join(self.localdir, "prm/grid"),
             os.path.join(self.localdir, "out/h0.df.out"),
             os.path.join(self.localdir, "out/u0.df.out"),
-            outfile,
+            self.outfile,
         )
 
     def _set_environment(self):
