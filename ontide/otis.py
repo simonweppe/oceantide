@@ -9,75 +9,56 @@ import netCDF4
 import xarray as xr
 import pyroms
 from fsspec import filesystem, get_mapper
+
+from ontake.ontake import Ontake
+
 from .core import nodal, astrol
 from .constituents import OMEGA
 
 
 OTIS_VERSION = "9"
 COMPLEX_VARS = ["hRe", "hIm", "uRe", "uIm", "vRe", "vIm"]
+ONTAKE_CATALOG = "gs://oceanum-catalog/oceanum.yml"
+ONTAKE_NAMESPACE = 'tide'
 
 
 class NCOtis(object):
-    """ Object to replace CGrid_OTIS from pyroms and handle h, u and v at once
+    """ Object to represent OTIS tidal constituents file
 
     Args: 
-        model (str):             Filename of the regional OTIS model file in fspec format
-                                 Ex: gs://oceanum-prod/tide/Model_ES2008
+        model (str):             Intake dataset of the regional OTIS model. 
+                                 TIP: use ontake to discover datasets:
+                                      ot = Ontake(namespace='tide', 
+                                                  master_url='gs://oceanum-catalog/oceanum.yml')
+                                      ot.datasets
+
         drop_amp_params (bool):  Option to drop amplitude parameters (they are not used
                                  for ROMS tide file because complex params are more
                                  appropraite for remapping)
-
-    Developer notes:
-        - this should replace both .load_otis and .CGrid_OTIS from pyroms
-        - migrate flood here as a method
-
     """
 
     name = "otis"  # necessary for remap to play nicely
 
     def __init__(
         self,
-        model="file:///data/tide/otis_netcdf/Model_tpxo9",
+        model="tpxo9",
         drop_amp_params=True,
         x0=None,
         x1=None,
         y0=None,
         y1=None,
     ):
-        with open(model) as f:
-            lines = f.readlines()
-            elevfile = os.path.join(
-                os.path.dirname(model), lines[0].split("/")[-1]
-            ).strip()
-            curfile = os.path.join(
-                os.path.dirname(model), lines[1].split("/")[-1]
-            ).strip()
-            self.gfile = os.path.join(
-                os.path.dirname(model), lines[2].split("/")[-1]
-            ).strip()
-
-        dsg = xr.open_dataset(self.gfile)
-        dsh = xr.open_dataset(elevfile)
-        dsu = xr.open_dataset(curfile)
-
-        # drop unused vars, transpose and merge
-        dsg = dsg.drop(
-            ["x_z", "y_z", "x_u", "y_u", "x_v", "y_v", "iob_z", "iob_u", "iob_v"]
-        ).transpose("ny", "nx")
-        dsu = dsu.drop(["lon_u", "lat_u", "lon_v", "lat_v"]).transpose("nc", "ny", "nx")
-        dsh = dsh.drop(["lat_z", "lon_z"]).transpose("nc", "ny", "nx")
-        if drop_amp_params:
-            dsh = dsh.drop(["ha", "hp"])
-            dsu = dsu.drop(["Ua", "ua", "up", "Va", "va", "vp"])
-
-        self.ds = xr.merge([dsg, dsh, dsu])
-        self._fix_east()
+        self.model = model
+        print(f"Loading {model} from intake catalog")
+        ot = Ontake(namespace=ONTAKE_NAMESPACE, master_url=ONTAKE_CATALOG)
+        self.ds = ot.dataset(model)
 
         # if subset is requested, better to run it before any operation
         if np.array([x0, x1, y0, y1]).any() is not None:
             assert (
                 np.array([x0, x1, y0, y1]).all() is not None
             ), "If one of <x0,x1,y0,y1> is provided, all must be provided"
+            print("Subsetting")
             self.subset(x0=x0, x1=x1, y0=y0, y1=y1)
         else:
             self.was_subsetted = False
@@ -88,7 +69,7 @@ class NCOtis(object):
 
     def __repr__(self):
         _repr = "<OTIS {} nc={} x0={:0.2f} x1={:0.2f} y0={:0.2f} y1={:0.2f} subset={}>".format(
-            self.gfile,
+            self.model,
             self.ds.dims["nc"],
             self.ds.lon_z.values.min(),
             self.ds.lon_z.values.max(),
@@ -112,33 +93,6 @@ class NCOtis(object):
         self.ds.hz.values += 0.001
         self.ds.hu.values += 0.001
         self.ds.hv.values += 0.001
-
-    def _fix_east(self):
-        """ Convert 0 < lon < 360 to -180 < lon < 180 and shift all vars accordingly
-
-        """
-        lon = self.ds.lon_z.values
-        lon[lon > 180] -= 360
-        idx = np.argsort(lon)
-        lon = np.take_along_axis(lon, idx, axis=-1)
-
-        print("shifting along x-axis: ")
-        for varname, var in self.ds.data_vars.items():
-            if "ny" in var.dims and "nx" in var.dims and not varname.startswith("lat"):
-                print(varname)
-                vals = var.values
-                if "lon" in varname:
-                    vals[vals > 180] -= 360
-                    self.ds[varname].values = vals
-
-                if len(var.dims) > 2:
-                    vals = np.take_along_axis(
-                        vals, idx[None, ...].repeat(self.ds.dims["nc"], axis=0), axis=-1
-                    )
-                else:
-                    vals = np.take_along_axis(vals, idx, axis=-1)
-
-                self.ds[varname].values = vals
 
     def _mask_vars(self):
         """ Apply mask to vars as land values are inconveniently = 0
@@ -234,17 +188,6 @@ class NCOtis(object):
             + self.ds.lat_v.values[y0 : y1 + 2, x0 : x1 + 2]
         )
 
-        # ones = np.ones(self.ds.hz.shape)
-        # a1 = self.ds.lat_u[y0 : y1 + 1, x0 + 1 : x1 + 2] - self.ds.lat_u[y0 : y1 + 1, x0 : x1 + 1]
-        # a2 = self.ds.lon_u[y0 : y1 + 1, x0 + 1 : x1 + 2] - self.ds.lon_u[y0 : y1 + 1, x0 : x1 + 1]
-        # a3 = 0.5 * (
-        #     self.ds.lat_u[y0 : y1 + 1, x0 + 1 : x1 + 2] + self.ds.lat_u[y0 : y1 + 1, x0 : x1 + 1]
-        # )
-        # a2 = np.where(a2 > 180 * ones, a2 - 360 * ones, a2)
-        # a2 = np.where(a2 < -180 * ones, a2 + 360 * ones, a2)
-        # a2 = a2 * np.cos(np.pi / 180.0 * a3)
-        # self.angle = np.arctan2(a1, a2)
-
         # finally, subsetting
         self.ds = self.ds.isel(nx=slice(x0, x1), ny=slice(y0, y1))
         print(self.__repr__())
@@ -301,7 +244,7 @@ def predict_tide_grid(
     lon,
     lat,
     time,
-    modfile="/data/tide/otis_netcdf/Model_tpxo9",
+    model="tpxo9",
     conlist=None,
     outfile=None,
 ):
@@ -309,10 +252,11 @@ def predict_tide_grid(
 
 	Args:
 	
-	modfile (str):            (Relative) path of the constituents model 
-                                file grid on your file system
-                                files must be in OTIS netcdf grid format
-                                TODO: make it a kwarg and discover best resolution if not provided
+	model (str):                Intake dataset of the regional OTIS model. 
+                                TIP: use ontake to discover datasets:
+                                    ot = Ontake(namespace='tide', 
+                                                master_url='gs://oceanum-catalog/oceanum.yml')
+                                    ot.datasets
                                 TODO: convert to zarr and use fsspec to generalize this
 	lon, lat (numpy ndarray): Each is an n-length array of longitude 
                                 and latitudes in degrees to perform predictions at.
@@ -343,9 +287,8 @@ def predict_tide_grid(
 
 	ds = predict_tide_grid(lon, lat, time) 
 	"""
-    # TODO: make it work on top of zarr / intake
 
-    otis = NCOtis(modfile, x0=lon.min(), x1=lon.max(), y0=lat.min(), y1=lat.max())
+    otis = NCOtis(model, x0=lon.min(), x1=lon.max(), y0=lat.min(), y1=lat.max())
     print("Flooding land to avoid interpolation noise")
     otis.flood()
     conlist = conlist or otis.cons
@@ -482,6 +425,87 @@ def _interp(arr, x, y, x2, y2):
     return spl(x2, y2, grid=False)
 
 
+def _fix_east(ds):
+        """ Convert 0 < lon < 360 to -180 < lon < 180 and shift all vars accordingly. 
+            IMPORTANT: this is peculiar to OTIS netcdf file provided by their servers.
+                       It is not meant to work generically with any xarray.Dataset
+            Args:
+                ds (xarray.Dataset) :: Input xarray dataset
+
+            Returns:
+                xarray.Dataset
+        """
+        lon = ds.lon_z.values
+        lon[lon > 180] -= 360
+        idx = np.argsort(lon)
+        lon = np.take_along_axis(lon, idx, axis=-1)
+
+        print("shifting along x-axis: ")
+        for varname, var in ds.data_vars.items():
+            if "ny" in var.dims and "nx" in var.dims and not varname.startswith("lat"):
+                print(varname)
+                vals = var.values
+                if "lon" in varname:
+                    vals[vals > 180] -= 360
+                    ds[varname].values = vals
+
+                if len(var.dims) > 2:
+                    vals = np.take_along_axis(
+                        vals, idx[None, ...].repeat(ds.dims["nc"], axis=0), axis=-1
+                    )
+                else:
+                    vals = np.take_along_axis(vals, idx, axis=-1)
+
+                ds[varname].values = vals
+
+        return ds
+
+
+def otisnc2zarr(
+    model="file:///data/tide/otis_netcdf/Model_tpxo9",
+    outfile="gs://oceanum-tide/otis/DATA_zarr/tpxo9.zarr",
+    drop_amp_params=False,
+):
+    # TODO: write retrieval from bucket
+    """ Function to convert h, u and v OTIS cons netcdf files into zarr so it can be 
+        inserted into intake catalog
+
+    Args: 
+        model (str):             Filename of the regional OTIS model file in fspec format
+                                 Ex: gs://oceanum-prod/tide/Model_ES2008
+        drop_amp_params (bool):  Option to drop amplitude parameters (they are not used
+                                 for ROMS tide file because complex params are more
+                                 appropriate for remapping)
+
+    Developer notes:
+        - this should replace both .load_otis and .CGrid_OTIS from pyroms
+    """
+    with open(model) as f:
+        lines = f.readlines()
+        elevfile = os.path.join(os.path.dirname(model), lines[0].split("/")[-1]).strip()
+        curfile = os.path.join(os.path.dirname(model), lines[1].split("/")[-1]).strip()
+        gfile = os.path.join(os.path.dirname(model), lines[2].split("/")[-1]).strip()
+
+    dsg = xr.open_dataset(gfile)
+    dsh = xr.open_dataset(elevfile)
+    dsu = xr.open_dataset(curfile)
+
+    # drop unused vars, transpose and merge
+    dsg = dsg.drop(
+        ["x_z", "y_z", "x_u", "y_u", "x_v", "y_v", "iob_z", "iob_u", "iob_v"]
+    ).transpose("ny", "nx")
+    dsu = dsu.drop(["lon_u", "lat_u", "lon_v", "lat_v"]).transpose("nc", "ny", "nx")
+    dsh = dsh.drop(["lat_z", "lon_z"]).transpose("nc", "ny", "nx")
+    if drop_amp_params:
+        dsh = dsh.drop(["ha", "hp"])
+        dsu = dsu.drop(["Ua", "ua", "up", "Va", "va", "vp"])
+
+    ds = xr.merge([dsg, dsh, dsu])
+    ds = _fix_east(ds)
+    ds.to_zarr('/tmp', os.path.basename(outfile), consolidated=True)
+    # TODO write bucket copy
+
+
 def bin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
     """ Converts OTIS binary files to xarray.Dataset. To be used when running inverse model
         internally, as it only supports OTIS binary format.
@@ -599,7 +623,7 @@ def bin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
             vv.append(vflux / dd)
 
         # a bit of a hack before we port to xarray, but needs more smarts in case it comes as a bucket URL
-        nc = netCDF4.Dataset(outfile.replace('.zarr', '.nc'), "w", format="NETCDF4")
+        nc = netCDF4.Dataset(outfile.replace(".zarr", ".nc"), "w", format="NETCDF4")
 
         dim_ncons = nc.createDimension("ncons", 2)
         dim_cons = nc.createDimension("cons", ncons)
@@ -634,28 +658,12 @@ def bin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
             v_pha[i] = -np.angle(vv[i])
 
         nc.close()
-    
+
         #  a bit of a hack before we port to xarray
         ds = xr.open_dataset(outfile)
-        if outfile.split('.')[-1] == 'zarr':
+        if outfile.split(".")[-1] == "zarr":
             ds.to_zarr(get_mapper(outfile))
 
         return ds
 
 
-if __name__ == "__main__":
-    import pandas as pd
-    import datetime as dt
-
-    # English Channel
-    xi = np.linspace(-1, 4, 50)
-    yi = np.linspace(48.5, 53.56, 53)
-
-    # Hauraki Gulf
-    xi = np.linspace(173.8282, 176.6906, 50)
-    yi = np.linspace(-38.3221, -35.1955, 53)
-
-    lon, lat = np.meshgrid(xi, yi)
-    time = pd.date_range(dt.datetime(2001, 1, 1), dt.datetime(2001, 1, 7, 23), freq="H")
-    modfile = "/data/tide/otis_netcdf/Model_tpxo9"
-    ds = predict_tide_grid(lon, lat, time, modfile)
