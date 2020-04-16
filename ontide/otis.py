@@ -482,28 +482,36 @@ def _interp(arr, x, y, x2, y2):
     return spl(x2, y2, grid=False)
 
 
-def bin2nc(gfile, hfile, uvfile, outfile, dmin=1.0, forward=False):
-    """ Converts OTIS binary files to netcdf. To be used when running inverse model
+def bin2xr(gfile, hfile, uvfile, dmin=1.0, write_to=None, outfile=None):
+    """ Converts OTIS binary files to xarray.Dataset. To be used when running inverse model
         internally, as it only supports OTIS binary format.
-        TODO - at the moment netcdf is on UDS conventions, should be on OTIS netcdf convention
-               TIP: use the NCOtis object to help with writting the netcdf
+        TODO 
+            - at the moment netcdf is in UDS conventions, should be on OTIS netcdf convention
+               TIP: use the NCOtis object to help with writting the netcdf or zarr
+            - using netCDF4 as legacy, so xarray object is being created after loading netcdf
+              file from disk, which is very inneficient - convert the whole thing to xarray
 
 	Args:
-	
-	gfile (str):    Path of the constituents model grid on your file system
-                        files must be in OTIS binary grid format
-	hfile (str):    Path of the elevations constituents file 
-    uvifle (str):   Path of the currents constituents file
-    outfile (str):  Path of the output netcdf file
+        gfile (str):     Path of the constituents model grid on your file system
+                            files must be in OTIS binary grid format
+        hfile (str):     Path of the elevations constituents file 
+        uvifle (str):    Path of the currents constituents file
+        outfile (str):   Path of the output netcdf file
+                            Default = None just returns xarray.Dataset
+        write_to (str):  Format to write to disk: 'netcdf' or 'zarr'. 
+                            Default = None just returns xarray.Dataset
 
 	Returns
-	    netcdf file in outfile path
+        xarray.Dataset
+	    output file saved at outfile path
 	    
 	Examples
 	--------
 
-    bin2nc('/path/gridES', '/path/h0.es.out', '/path/u0.es.out', '/path/cons.nc')
+    bin2xr('/path/gridES', '/path/h0.es.out', '/path/u0.es.out', write_to='netcdf', outfile='/path/cons.nc')
 	"""
+    if write_to != None or outfile != None:
+        assert outfile != None and write_to != None, "both [outfile] and [write_to] must be provided"
 
     INT = np.dtype(">i4")
     FLOAT = np.dtype(">f4")
@@ -594,7 +602,8 @@ def bin2nc(gfile, hfile, uvfile, outfile, dmin=1.0, forward=False):
             uu.append(uflux / dd)
             vv.append(vflux / dd)
 
-        nc = netCDF4.Dataset(outfile, "w", format="NETCDF4")
+        #  a bit of a hack before we port to xarray
+        nc = netCDF4.Dataset(outfile.replace('.zarr', '.nc'), "w", format="NETCDF4")
 
         dim_ncons = nc.createDimension("ncons", 2)
         dim_cons = nc.createDimension("cons", ncons)
@@ -629,6 +638,13 @@ def bin2nc(gfile, hfile, uvfile, outfile, dmin=1.0, forward=False):
             v_pha[i] = -np.angle(vv[i])
 
         nc.close()
+    
+        #  a bit of a hack before we port to xarray
+        ds = xr.open_dataset(outfile)
+        if write_to == 'zarr':
+            ds.to_zarr(get_mapper(outfile))
+
+        return ds
 
 
 if __name__ == "__main__":

@@ -34,7 +34,8 @@ class OTISoo(object):
                                                 - will be registered as a new grid in the cons bounds BQ table 
             gcp_sa (str)             ::  GCP service account json file (when interaction with GCP resources is needed)
 
-        Examples:
+        Examples
+        --------
             - to run an inverse solution, just use the run method:
 
             otisoo = OTISoo('rag', 174.71, 174.84, -37.84, -37.78, 
