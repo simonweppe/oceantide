@@ -120,7 +120,7 @@ class OTISoo(object):
             os.path.join(self.localdir, "prm/grid"),
             os.path.join(self.localdir, "out/h0.df.out"),
             os.path.join(self.localdir, "out/u0.df.out"),
-            self.outfile,
+            outfile=self.outfile,
         )
 
     def _set_environment(self):
