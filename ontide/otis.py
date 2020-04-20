@@ -557,7 +557,7 @@ def read_otis_grd_bin(grdfile):
         np.linspace(lon_z[0], lon_z[1], n), np.linspace(lat_z[0], lat_z[1], m)
     )
 
-    if (lon_z[0] < 0) & (lon_z[1] < 0):
+    if (lon_z[0, 0] < 0) & (lon_z[0, 1] < 0):
         lon_z = lon_z + 360
 
     # WARNING: assuming OTIS grids will always be regular, easier than deducting from the binaries
@@ -587,6 +587,8 @@ def read_otis_cons_bin(hfile):
 
         cons = np.array([c.ljust(4).lower() for c in cons])
 
+    return cons
+
 
 def read_otis_h_bin(hfile):
     INT = np.dtype(">i4")
@@ -608,7 +610,7 @@ def read_otis_h_bin(hfile):
         h = []
         for i in range(ncons):
             htemp = np.fromfile(f, FLOAT, 2 * nn)
-            h.append(np.reshape(htemp[::2] + 1j * htemp[1::2], (nlat, nlon)))
+            h.append(np.reshape(htemp[::2] + 1j * htemp[1::2], (nlon, nlat)))
 
     h = np.array(h)
     hRe = np.real(h)
@@ -643,11 +645,11 @@ def read_otis_uv_bin(uvfile, ncons):
             tmp = np.fromfile(f, dtype=np.float32, count=4 * n * m)
             tmp.byteswap(True)
 
-        tmp = np.reshape(tmp, (4 * n, m))
-        URe.append(tmp[0 : 4 * n - 3 : 4, :])
-        UIm.append(tmp[1 : 4 * n - 2 : 4, :])
-        VRe.append(tmp[2 : 4 * n - 1 : 4, :])
-        VIm.append(tmp[3 : 4 * n : 4, :])
+        tmp = np.reshape(tmp, (m, 4 * n))
+        URe.append(tmp[:, 0 : 4 * n - 3 : 4])
+        UIm.append(tmp[:, 1 : 4 * n - 2 : 4])
+        VRe.append(tmp[:, 2 : 4 * n - 1 : 4])
+        VIm.append(tmp[:, 3 : 4 * n : 4])
 
     URe, UIm = np.array(URe), np.array(UIm)
     VRe, VIm = np.array(VRe), np.array(VIm)
@@ -658,11 +660,6 @@ def read_otis_uv_bin(uvfile, ncons):
 def otisbin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
     """ Converts OTIS binary files to xarray.Dataset. To be used when running inverse model
         internally, as it only supports OTIS binary format.
-        TODO 
-            - at the moment netcdf is in UDS conventions, should be on OTIS netcdf convention
-               TIP: use the NCOtis object to help with writting the netcdf or zarr
-            - using netCDF4 as legacy, so xarray object is being created after loading netcdf
-              file from disk, which is very inneficient - convert the whole thing to xarray
 
 	Args:
         gfile (str):     Path of the constituents model grid on your file system
@@ -693,6 +690,9 @@ def otisbin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
         vRe.append(VRe[ic, ...] / hz)
         uIm.append(UIm[ic, ...] / hz)
         vIm.append(VIm[ic, ...] / hz)
+
+    uIm, uRe = np.array(uIm), np.array(uRe)
+    vIm, vRe = np.array(vIm), np.array(vRe)
 
     dims = ("nc", "ny", "nx")
 
@@ -818,16 +818,16 @@ def otisbin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
         name="lon_u",
         attrs={"long_name": "longitude of U nodes", "units": "degree_east"},
     )
-    lat_v_a = xr.DataArray(
-        lat_v,
+    lon_v_a = xr.DataArray(
+        lon_v,
         dims=("ny", "nx"),
-        name="lat_v",
+        name="lon_v",
         attrs={"long_name": "longitude of V nodes", "units": "degree_east"},
     )
-    lat_z_a = xr.DataArray(
-        lat_z,
+    lon_z_a = xr.DataArray(
+        lon_z,
         dims=("ny", "nx"),
-        name="lat_z",
+        name="lon_z",
         attrs={"long_name": "longitude of Z nodes", "units": "degree_east"},
     )
     mu_a = xr.DataArray(
