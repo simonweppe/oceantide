@@ -8,7 +8,7 @@ import os, shutil, glob, logging
 import numpy as np
 from google.cloud import storage, bigquery
 from ondata.download.gebco import get_gebco
-from ontide.otis import bin2xr
+from ontide.otis import otisbin2xr
 
 
 BUCKET = "oceanum-tide"
@@ -116,7 +116,7 @@ class OTISoo(object):
         os.system(f"./Fwd_fac")
         
         logging.info("Writting to {self.outfile}")
-        bin2xr(
+        otisbin2xr(
             os.path.join(self.localdir, "prm/grid"),
             os.path.join(self.localdir, "out/h0.df.out"),
             os.path.join(self.localdir, "out/u0.df.out"),

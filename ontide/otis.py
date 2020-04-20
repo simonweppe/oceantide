@@ -19,7 +19,7 @@ from .constituents import OMEGA
 OTIS_VERSION = "9"
 COMPLEX_VARS = ["hRe", "hIm", "uRe", "uIm", "vRe", "vIm"]
 ONTAKE_CATALOG = "gs://oceanum-catalog/oceanum.yml"
-ONTAKE_NAMESPACE = 'tide'
+ONTAKE_NAMESPACE = "tide"
 
 
 class NCOtis(object):
@@ -40,13 +40,7 @@ class NCOtis(object):
     name = "otis"  # necessary for remap to play nicely
 
     def __init__(
-        self,
-        model="tpxo9",
-        drop_amp_params=True,
-        x0=None,
-        x1=None,
-        y0=None,
-        y1=None,
+        self, model="tpxo9", drop_amp_params=True, x0=None, x1=None, y0=None, y1=None,
     ):
         self.model = model
         print(f"Loading {model} from intake catalog")
@@ -241,12 +235,7 @@ class NCOtis(object):
 
 
 def predict_tide_grid(
-    lon,
-    lat,
-    time,
-    model="tpxo9",
-    conlist=None,
-    outfile=None,
+    lon, lat, time, model="tpxo9", conlist=None, outfile=None,
 ):
     """ Performs a tidal prediction at all points in [lon,lat] at times.
 
@@ -426,7 +415,7 @@ def _interp(arr, x, y, x2, y2):
 
 
 def _fix_east(ds):
-        """ Convert 0 < lon < 360 to -180 < lon < 180 and shift all vars accordingly. 
+    """ Convert 0 < lon < 360 to -180 < lon < 180 and shift all vars accordingly. 
             IMPORTANT: this is peculiar to OTIS netcdf file provided by their servers.
                        It is not meant to work generically with any xarray.Dataset
             Args:
@@ -435,30 +424,30 @@ def _fix_east(ds):
             Returns:
                 xarray.Dataset
         """
-        lon = ds.lon_z.values
-        lon[lon > 180] -= 360
-        idx = np.argsort(lon)
-        lon = np.take_along_axis(lon, idx, axis=-1)
+    lon = ds.lon_z.values
+    lon[lon > 180] -= 360
+    idx = np.argsort(lon)
+    lon = np.take_along_axis(lon, idx, axis=-1)
 
-        print("shifting along x-axis: ")
-        for varname, var in ds.data_vars.items():
-            if "ny" in var.dims and "nx" in var.dims and not varname.startswith("lat"):
-                print(varname)
-                vals = var.values
-                if "lon" in varname:
-                    vals[vals > 180] -= 360
-                    ds[varname].values = vals
-
-                if len(var.dims) > 2:
-                    vals = np.take_along_axis(
-                        vals, idx[None, ...].repeat(ds.dims["nc"], axis=0), axis=-1
-                    )
-                else:
-                    vals = np.take_along_axis(vals, idx, axis=-1)
-
+    print("shifting along x-axis: ")
+    for varname, var in ds.data_vars.items():
+        if "ny" in var.dims and "nx" in var.dims and not varname.startswith("lat"):
+            print(varname)
+            vals = var.values
+            if "lon" in varname:
+                vals[vals > 180] -= 360
                 ds[varname].values = vals
 
-        return ds
+            if len(var.dims) > 2:
+                vals = np.take_along_axis(
+                    vals, idx[None, ...].repeat(ds.dims["nc"], axis=0), axis=-1
+                )
+            else:
+                vals = np.take_along_axis(vals, idx, axis=-1)
+
+            ds[varname].values = vals
+
+    return ds
 
 
 def otisnc2zarr(
@@ -502,11 +491,102 @@ def otisnc2zarr(
 
     ds = xr.merge([dsg, dsh, dsu])
     ds = _fix_east(ds)
-    ds.to_zarr('/tmp', os.path.basename(outfile), consolidated=True)
+    ds.to_zarr("/tmp", os.path.basename(outfile), consolidated=True)
     # TODO write bucket copy
 
 
-def bin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
+def read_otis_grd_bin(grdfile):
+    """ Reads the grid data from an otis binary file
+        
+    Args:
+        grdfile (str): OTIS grid binary file path
+        
+    Returns: 
+        lon_z, lat_z, lon_u, lat_u, lon_v, lat_v  ::  Arakawa C-grid coordinates 
+        hz  ::  depth at Z nodes
+        mz  ::  mask at Z nodes
+
+    TODO: return depth and mask at U and V nodes
+
+    See this post on byte ordering
+            http://stackoverflow.com/questions/1632673/python-file-slurp-w-endian-conversion
+    """
+    f = open(grdfile, "rb")
+    #
+    ## Try numpy
+    f.seek(4, 0)
+    n = np.fromfile(f, dtype=np.int32, count=1)
+    m = np.fromfile(f, dtype=np.int32, count=1)
+    lat_z = np.fromfile(f, dtype=np.float32, count=2)
+    lon_z = np.fromfile(f, dtype=np.float32, count=2)
+    dt = np.fromfile(f, dtype=np.float32, count=1)
+
+    n.byteswap(True)
+    m.byteswap(True)
+    n = int(n)
+    m = int(m)
+    lat_z.byteswap(True)
+    lon_z.byteswap(True)
+    dt.byteswap(True)
+
+    nob = np.fromfile(f, dtype=np.int32, count=1)
+    nob.byteswap(True)
+    if nob == 0:
+        f.seek(20, 1)
+        iob = []
+    else:
+        f.seek(8, 1)
+        iob = np.fromfile(f, dtype=np.int32, count=int(2 * nob))
+        iob.byteswap(True)
+        iob = np.reshape(iob, (2, int(nob)))
+        f.seek(8, 1)
+
+    hz = np.fromfile(f, dtype=np.float32, count=int(n * m))
+    f.seek(8, 1)
+    mz = np.fromfile(f, dtype=np.int32, count=int(n * m))
+
+    hz.byteswap(True)
+    mz.byteswap(True)
+
+    hz = np.reshape(hz, (m, n))
+    mz = np.reshape(mz, (m, n))
+
+    f.close()
+
+    lon_z, lat_z = np.meshgrid(
+        np.linspace(lon_z[0], lon_z[1], n), np.linspace(lat_z[0], lat_z[1], m)
+    )
+
+    # WARNING: assuming OTIS grids will always be regular, easier than deducting from the binaries
+    d2 = (lon_z[1,0] - lon_z[0,0]) / 2.
+    lon_u, lat_u = lon_z - d2, lat_z.copy()
+    lon_v, lat_v = lon_z.copy(), lat_z - d2
+
+    return lon_z, lat_z, lon_u, lat_u, lon_v, lat_v, hz, mz
+
+
+def read_otis_cons_bin(hfile):
+    """
+    Returns the list of constituents in the file
+    """
+    CHAR = np.dtype(">c")
+
+
+    with open(hfile, "rb") as f:
+        nm = np.fromfile(f, dtype=np.int32, count=4)
+        nm.byteswap(True)
+
+        ncons = nm[-1]
+        dum = np.fromfile(f, dtype=np.int32, count=4)[0]
+        cons = []
+        for i in range(ncons):
+            scons = np.fromfile(f, CHAR, 4).tostring().upper()
+            cons.append(scons.rstrip())
+
+        cons = np.array([c.ljust(4).lower() for c in cons])
+
+
+def otisbin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
     """ Converts OTIS binary files to xarray.Dataset. To be used when running inverse model
         internally, as it only supports OTIS binary format.
         TODO 
@@ -530,8 +610,28 @@ def bin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
 	Examples
 	--------
 
-    bin2xr('/path/gridES', '/path/h0.es.out', '/path/u0.es.out', write_to='netcdf', outfile='/path/cons.nc')
+    otisbin2xr('/path/gridES', '/path/h0.es.out', '/path/u0.es.out', write_to='netcdf', outfile='/path/cons.nc')
 	"""
+    lon_z, lat_z, lon_u, lat_u, lon_v, lat_v, hz, mz = read_otis_grd_bin(gfile)
+    con = read_otis_cons_bin(hfile)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     INT = np.dtype(">i4")
     FLOAT = np.dtype(">f4")
@@ -622,6 +722,10 @@ def bin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
             uu.append(uflux / dd)
             vv.append(vflux / dd)
 
+
+        
+        # TODO, need to write something like _fix_lon() here before saving zarr file
+
         # a bit of a hack before we port to xarray, but needs more smarts in case it comes as a bucket URL
         nc = netCDF4.Dataset(outfile.replace(".zarr", ".nc"), "w", format="NETCDF4")
 
@@ -665,5 +769,3 @@ def bin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
             ds.to_zarr(get_mapper(outfile))
 
         return ds
-
-
