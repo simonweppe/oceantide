@@ -558,10 +558,10 @@ def read_otis_grd_bin(grdfile):
     )
 
     if (lon_z[0] < 0) & (lon_z[1] < 0):
-            lon_z = lon_z + 360
+        lon_z = lon_z + 360
 
     # WARNING: assuming OTIS grids will always be regular, easier than deducting from the binaries
-    d2 = (lon_z[1,0] - lon_z[0,0]) / 2.
+    d2 = (lon_z[1, 0] - lon_z[0, 0]) / 2.0
     lon_u, lat_u = lon_z - d2, lat_z.copy()
     lon_v, lat_v = lon_z.copy(), lat_z - d2
 
@@ -573,7 +573,6 @@ def read_otis_cons_bin(hfile):
     Returns the list of constituents in the file
     """
     CHAR = np.dtype(">c")
-
 
     with open(hfile, "rb") as f:
         nm = np.fromfile(f, dtype=np.int32, count=4)
@@ -612,8 +611,8 @@ def read_otis_h_bin(hfile):
             h.append(np.reshape(htemp[::2] + 1j * htemp[1::2], (nlat, nlon)))
 
     h = np.array(h)
-    hRe = np.real(h) 
-    hIm = np.imag(h) 
+    hRe = np.real(h)
+    hIm = np.imag(h)
 
     return hRe, hIm
 
@@ -622,7 +621,7 @@ def read_otis_uv_bin(uvfile, ncons):
     URe, UIm, VRe, VIm = [], [], [], []
 
     for ic in range(ncons):
-        with open(uvfile,'rb') as f:
+        with open(uvfile, "rb") as f:
             ll = np.fromfile(f, dtype=np.int32, count=1)
             nm = np.fromfile(f, dtype=np.int32, count=3)
             th_lim = np.fromfile(f, dtype=np.float32, count=2)
@@ -633,7 +632,7 @@ def read_otis_uv_bin(uvfile, ncons):
             nm.byteswap(True)
             th_lim.byteswap(True)
             ph_lim.byteswap(True)
-            
+
             n = nm[0]
             m = nm[1]
             nc = nm[2]
@@ -645,16 +644,15 @@ def read_otis_uv_bin(uvfile, ncons):
             tmp.byteswap(True)
 
         tmp = np.reshape(tmp, (4 * n, m))
-        URe.append( tmp[0 : 4 * n - 3 : 4, :] )
-        UIm.append( tmp[1 : 4 * n - 2 : 4, :] )
-        VRe.append( tmp[2 : 4 * n - 1 : 4, :] )
-        VIm.append( tmp[3 : 4 * n : 4, :] )
+        URe.append(tmp[0 : 4 * n - 3 : 4, :])
+        UIm.append(tmp[1 : 4 * n - 2 : 4, :])
+        VRe.append(tmp[2 : 4 * n - 1 : 4, :])
+        VIm.append(tmp[3 : 4 * n : 4, :])
 
     URe, UIm = np.array(URe), np.array(UIm)
     VRe, VIm = np.array(VRe), np.array(VIm)
 
     return URe, UIm, VRe, VIm
-
 
 
 def otisbin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
@@ -691,160 +689,243 @@ def otisbin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
     uRe, uIm, vRe, vIm = [], [], [], []
 
     for ic in range(len(con)):
-        uRe.append(URe[ic,...] / hz)
-        vRe.append(VRe[ic,...] / hz)
-        uIm.append(UIm[ic,...] / hz)
-        vIm.append(VIm[ic,...] / hz)
+        uRe.append(URe[ic, ...] / hz)
+        vRe.append(VRe[ic, ...] / hz)
+        uIm.append(UIm[ic, ...] / hz)
+        vIm.append(VIm[ic, ...] / hz)
 
+    dims = ("nc", "ny", "nx")
 
+    attrs = {
+        "description": "Tidal constituents file in OTIS format",
+        "institution": "Oceanum LTD",
+    }
 
+    UIm_a = xr.DataArray(
+        UIm,
+        dims=dims,
+        name="UIm",
+        attrs={
+            "field": "Im(U), vector W->E",
+            "long_name": "Tidal transport complex ampl., Imag part, at U-nodes",
+            "units": "meter^2/s",
+        },
+    )
+    URe_a = xr.DataArray(
+        URe,
+        dims=dims,
+        name="URe",
+        attrs={
+            "field": "Re(U), vector W->E",
+            "long_name": "Tidal transport complex ampl., Real part, at U-nodes",
+            "units": "meter^2/s",
+        },
+    )
+    VIm_a = xr.DataArray(
+        VIm,
+        dims=dims,
+        name="VIm",
+        attrs={
+            "field": "Im(V), vector W->E",
+            "long_name": "Tidal transport complex ampl., Imag part, at V-nodes",
+            "units": "meter^2/s",
+        },
+    )
+    VRe_a = xr.DataArray(
+        VRe,
+        dims=dims,
+        name="VRe",
+        attrs={
+            "field": "Re(V), vector W->E",
+            "long_name": "Tidal transport complex ampl., Real part, at V-nodes",
+            "units": "meter^2/s",
+        },
+    )
+    con_a = xr.DataArray(
+        con, dims=("nc"), name="con", attrs={"long_name": "Tidal constituents"}
+    )
+    hIm_a = xr.DataArray(
+        hIm,
+        dims=dims,
+        name="hIm",
+        attrs={
+            "field": "Im(h), scalar",
+            "long_name": "Tidal elevation complex amplitude, Imag part",
+            "units": "meter",
+        },
+    )
+    hRe_a = xr.DataArray(
+        hRe,
+        dims=dims,
+        name="hRe",
+        attrs={
+            "field": "Re(h), scalar",
+            "long_name": "Tidal elevation complex amplitude, Real part",
+            "units": "meter",
+        },
+    )
+    hu_a = xr.DataArray(
+        hz,
+        dims=("ny", "nx"),
+        name="hu",
+        attrs={
+            "field": "bathy, scalar",
+            "long_name": "Bathymetry at U-nodes",
+            "units": "meter",
+        },
+    )
+    hv_a = xr.DataArray(
+        hz,
+        dims=("ny", "nx"),
+        name="hv",
+        attrs={
+            "field": "bathy, scalar",
+            "long_name": "Bathymetry at V-nodes",
+            "units": "meter",
+        },
+    )
+    hz_a = xr.DataArray(
+        hz,
+        dims=("ny", "nx"),
+        name="hz",
+        attrs={
+            "field": "bathy, scalar",
+            "long_name": "Bathymetry at Z-nodes",
+            "units": "meter",
+        },
+    )
+    lat_u_a = xr.DataArray(
+        lat_u,
+        dims=("ny", "nx"),
+        name="lat_u",
+        attrs={"long_name": "latitude of U nodes", "units": "degree_north"},
+    )
+    lat_v_a = xr.DataArray(
+        lat_v,
+        dims=("ny", "nx"),
+        name="lat_v",
+        attrs={"long_name": "latitude of V nodes", "units": "degree_north"},
+    )
+    lat_z_a = xr.DataArray(
+        lat_z,
+        dims=("ny", "nx"),
+        name="lat_z",
+        attrs={"long_name": "latitude of Z nodes", "units": "degree_north"},
+    )
+    lon_u_a = xr.DataArray(
+        lon_u,
+        dims=("ny", "nx"),
+        name="lon_u",
+        attrs={"long_name": "longitude of U nodes", "units": "degree_east"},
+    )
+    lat_v_a = xr.DataArray(
+        lat_v,
+        dims=("ny", "nx"),
+        name="lat_v",
+        attrs={"long_name": "longitude of V nodes", "units": "degree_east"},
+    )
+    lat_z_a = xr.DataArray(
+        lat_z,
+        dims=("ny", "nx"),
+        name="lat_z",
+        attrs={"long_name": "longitude of Z nodes", "units": "degree_east"},
+    )
+    mu_a = xr.DataArray(
+        mz,
+        dims=("ny", "nx"),
+        name="mu",
+        attrs={
+            "long_name": "water land mask on U nodes",
+            "option_0": "land",
+            "option_1": "water",
+        },
+    )
+    mv_a = xr.DataArray(
+        mz,
+        dims=("ny", "nx"),
+        name="mv",
+        attrs={
+            "long_name": "water land mask on V nodes",
+            "option_0": "land",
+            "option_1": "water",
+        },
+    )
+    mz_a = xr.DataArray(
+        mz,
+        dims=("ny", "nx"),
+        name="mz",
+        attrs={
+            "long_name": "water land mask on Z nodes",
+            "option_0": "land",
+            "option_1": "water",
+        },
+    )
+    uIm_a = xr.DataArray(
+        uIm,
+        dims=dims,
+        name="uIm",
+        attrs={
+            "long_name": "Tidal WE velocities complex ampl., Imag part, at U-nodes",
+            "units": "meter/s",
+        },
+    )
+    uRe_a = xr.DataArray(
+        uRe,
+        dims=dims,
+        name="uRe",
+        attrs={
+            "long_name": "Tidal WE velocities complex ampl., Real part, at U-nodes",
+            "units": "meter/s",
+        },
+    )
+    vIm_a = xr.DataArray(
+        vIm,
+        dims=dims,
+        name="vIm",
+        attrs={
+            "long_name": "Tidal NS velocities complex ampl., Imag part, at V-nodes",
+            "units": "meter/s",
+        },
+    )
+    vRe_a = xr.DataArray(
+        vRe,
+        dims=dims,
+        name="vRe",
+        attrs={
+            "long_name": "Tidal NS velocities complex ampl., Real part, at V-nodes",
+            "units": "meter/s",
+        },
+    )
 
+    ds = xr.Dataset(
+        data_vars={
+            "UIm": UIm_a,
+            "URe": URe_a,
+            "VIm": VIm_a,
+            "VRe": VRe_a,
+            "con": con_a,
+            "hIm": hIm_a,
+            "hRe": hRe_a,
+            "hu": hu_a,
+            "hv": hv_a,
+            "hz": hz_a,
+            "lat_u": lat_u_a,
+            "lat_v": lat_v_a,
+            "lat_z": lat_z_a,
+            "lon_u": lon_u_a,
+            "lon_v": lon_v_a,
+            "lon_z": lon_z_a,
+            "mu": mu_a,
+            "mv": mv_a,
+            "mz": mz_a,
+            "uIm": uIm_a,
+            "uRe": uRe_a,
+            "vIm": vIm_a,
+            "vRe": vRe_a,
+        },
+        attrs=attrs,
+    )
 
+    # TODO, need to write something like _fix_lon() here before saving zarr file
 
-
-
-
-
-
-
-
-
-
-
-
-    INT = np.dtype(">i4")
-    FLOAT = np.dtype(">f4")
-    CHAR = np.dtype(">c")
-    EOR = np.dtype(">i8")
-
-    cdir = os.path.dirname(gfile)
-
-    with open(hfile, "rb") as f:
-        ll = np.fromfile(f, INT, 1)[0]
-        nlat = np.fromfile(f, INT, 1)[0]
-        nlon = np.fromfile(f, INT, 1)[0]
-        ncons = np.fromfile(f, INT, 1)[0]
-        gridbound = np.fromfile(f, FLOAT, 4)
-        cid = []
-        for i in range(ncons):
-            scons = np.fromfile(f, CHAR, 4).tostring().upper()
-            cid.append(scons.rstrip())
-        eor = np.fromfile(f, FLOAT, 2)
-
-        nn = nlon * nlat
-        h = []
-        for i in range(ncons):
-            htemp = np.fromfile(f, FLOAT, 2 * nn)
-            h.append(np.reshape(htemp[::2] + 1j * htemp[1::2], (nlat, nlon)))
-
-    with open(gfile, "rb") as fid:
-        dum = np.fromfile(fid, FLOAT, 1)
-        m = np.fromfile(fid, INT, 1)[0]
-        n = np.fromfile(fid, INT, 1)[0]
-        lats = np.fromfile(fid, FLOAT, 2)
-        lons = np.fromfile(fid, FLOAT, 2)
-        if (lons[0] < 0) & (lons[1] < 0):
-            lons = lons + 360
-        dt = np.fromfile(fid, FLOAT, 1)[0]
-        nob = np.fromfile(fid, INT, 1)[0]
-        if nob == 0:
-            dum = np.fromfile(fid, FLOAT, 5)
-            iob = []
-        else:
-            dum = np.fromfile(fid, FLOAT, 2)
-            iob = np.fromfile(fid, INT, 2 * nob)
-            iob = np.reshape(iob, (2, nob))
-            dum = np.fromfile(fid, FLOAT, 2)
-
-        hz = np.fromfile(fid, FLOAT, n * m)
-        dd = np.maximum(np.reshape(hz, (n, m)), dmin)
-        dum = np.fromfile(fid, FLOAT, 2)
-        mz = np.fromfile(fid, INT, n * m)
-        lm = np.reshape(mz, (n, m))
-
-    dx = (lons[1] - lons[0]) / m
-    dy = (lats[1] - lats[0]) / n
-
-    with open(uvfile, "rb") as f:
-        ll = np.fromfile(f, INT, 1)
-        nlon = np.fromfile(f, INT, 1)[0]
-        nlat = np.fromfile(f, INT, 1)[0]
-        ncons = np.fromfile(f, INT, 1)[0]
-        gridbound = np.fromfile(f, FLOAT, 4)
-        cid = []
-        for i in range(ncons):
-            scons = np.fromfile(f, CHAR, 4).tostring().upper()
-            cid.append(scons.rstrip())
-        eor = np.fromfile(f, EOR, 1)
-
-        uu = []
-        vv = []
-        for i in range(ncons):
-            cin = np.fromfile(f, FLOAT, 4 * nn)
-            eor = np.fromfile(f, EOR, 1)
-            u = np.reshape(cin[::4] + 1j * cin[1::4], (nlat, nlon))
-            v = np.reshape(cin[2::4] + 1j * cin[3::4], (nlat, nlon))
-
-            u = u * lm
-            v = v * lm
-            u[:, 1:] = u[:, 1:] * lm[:, :-1]
-            v[1:, :] = v[1:, :] * lm[:-1, :]
-
-            uflux = 0.5 * u
-            vflux = 0.5 * v
-            uflux[:, :-1] += 0.5 * u[:, 1:]
-            vflux[:-1, :] += 0.5 * v[1:, :]
-
-            uflux[uflux == 0] = np.nan
-            vflux[vflux == 0] = np.nan
-
-            uu.append(uflux / dd)
-            vv.append(vflux / dd)
-
-
-        
-        # TODO, need to write something like _fix_lon() here before saving zarr file
-
-        # a bit of a hack before we port to xarray, but needs more smarts in case it comes as a bucket URL
-        nc = netCDF4.Dataset(outfile.replace(".zarr", ".nc"), "w", format="NETCDF4")
-
-        dim_ncons = nc.createDimension("ncons", 2)
-        dim_cons = nc.createDimension("cons", ncons)
-        dim_lon = nc.createDimension("lon", nlon)
-        dim_lat = nc.createDimension("lat", nlat)
-
-        lons = nc.createVariable("lon", "f4", ("lon"))
-        lats = nc.createVariable("lat", "f4", ("lat"))
-
-        lons[:] = np.arange(gridbound[2] + dx / 2, gridbound[3], dx)
-        lats[:] = np.arange(gridbound[0] + dy / 2, gridbound[1], dy)
-
-        cons = nc.createVariable("cons", "S1", ("cons", "ncons"))
-        for i in range(ncons):
-            cons[i] = netCDF4.stringtochar(np.array(cid[i]))
-
-        e_amp = nc.createVariable("e_amp", "f", ("cons", "lat", "lon"))
-        e_pha = nc.createVariable("e_pha", "f", ("cons", "lat", "lon"))
-        u_amp = nc.createVariable("u_amp", "f", ("cons", "lat", "lon"))
-        u_pha = nc.createVariable("u_pha", "f", ("cons", "lat", "lon"))
-        v_amp = nc.createVariable("v_amp", "f", ("cons", "lat", "lon"))
-        v_pha = nc.createVariable("v_pha", "f", ("cons", "lat", "lon"))
-        dep = nc.createVariable("dep", "f", ("lat", "lon"))
-        dep[:] = dd
-
-        for i in range(ncons):
-            e_amp[i] = np.absolute(h[i])
-            e_pha[i] = -np.angle(h[i])
-            u_amp[i] = np.absolute(uu[i])
-            u_pha[i] = -np.angle(uu[i])
-            v_amp[i] = np.absolute(vv[i])
-            v_pha[i] = -np.angle(vv[i])
-
-        nc.close()
-
-        #  a bit of a hack before we port to xarray
-        ds = xr.open_dataset(outfile)
-        if outfile.split(".")[-1] == "zarr":
-            ds.to_zarr(get_mapper(outfile))
-
-        return ds
+    return ds
