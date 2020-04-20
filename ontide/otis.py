@@ -686,7 +686,15 @@ def otisbin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
     lon_z, lat_z, lon_u, lat_u, lon_v, lat_v, hz, mz = read_otis_grd_bin(gfile)
     con = read_otis_cons_bin(hfile)
     hRe, hIm = read_otis_h_bin(hfile)
-    URe, UIm, VRe, VIm = read_otis_uv_bin(uvfile, len(ncons))
+    URe, UIm, VRe, VIm = read_otis_uv_bin(uvfile, len(con))
+
+    uRe, uIm, vRe, vIm = [], [], [], []
+
+    for ic in range(len(con)):
+        uRe.append(URe[ic,...] / hz)
+        vRe.append(VRe[ic,...] / hz)
+        uIm.append(UIm[ic,...] / hz)
+        vIm.append(VIm[ic,...] / hz)
 
 
 
