@@ -108,20 +108,24 @@ class OTISoo(object):
         self.make_bathy()
 
         for _file in glob.glob(os.path.join(ROOTDIR, "bin/*")):
-            os.symlink(_file, os.path.join(self.localdir, f"exe/{os.path.basename(_file)}"))
+            os.symlink(
+                _file, os.path.join(self.localdir, f"exe/{os.path.basename(_file)}")
+            )
 
         os.chdir(os.path.join(self.localdir, "exe"))
         os.system("./mk_grid -l../bathy/bathy.dat")
         os.system(f"./ob_eval -M{self.bnd}")
         os.system(f"./Fwd_fac")
-        
+
         logging.info("Writting to {self.outfile}")
-        otisbin2xr(
+        ds = otisbin2xr(
             os.path.join(self.localdir, "prm/grid"),
             os.path.join(self.localdir, "out/h0.df.out"),
             os.path.join(self.localdir, "out/u0.df.out"),
             outfile=self.outfile,
         )
+
+        return ds
 
     def _set_environment(self):
         self._get_otis_bin()
@@ -167,7 +171,3 @@ class OTISoo(object):
             self._auth_storage()
             blob = self.bucket.get_blob(DBBLOB)
             blob.download_to_filename(DBDIR)
-
-
-
-

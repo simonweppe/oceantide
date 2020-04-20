@@ -3,6 +3,7 @@
 """OTIS tools."""
 
 import os
+import logging
 import numpy as np
 from scipy import interpolate
 import netCDF4
@@ -926,6 +927,14 @@ def otisbin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
         attrs=attrs,
     )
 
-    # TODO, need to write something like _fix_lon() here before saving zarr file
+    # TODO probably need to write something like _fix_lon() here before saving zarr file
+
+    if outfile.endswith('.zarr'):
+        logging.info(f"Writting {outfile}")
+        ds.to_zarr(get_mapper(outfile), consolidated=True)
+    elif outfile.endswith('.nc'):
+        ds.to_netcdf(outfile, format='NETCDF4')
+    else:
+        raise Exception('outfile must have either .nc or .zarr extension and be comptible with fsspec notation')
 
     return ds
