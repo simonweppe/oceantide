@@ -557,6 +557,9 @@ def read_otis_grd_bin(grdfile):
         np.linspace(lon_z[0], lon_z[1], n), np.linspace(lat_z[0], lat_z[1], m)
     )
 
+    if (lon_z[0] < 0) & (lon_z[1] < 0):
+            lon_z = lon_z + 360
+
     # WARNING: assuming OTIS grids will always be regular, easier than deducting from the binaries
     d2 = (lon_z[1,0] - lon_z[0,0]) / 2.
     lon_u, lat_u = lon_z - d2, lat_z.copy()
@@ -584,6 +587,74 @@ def read_otis_cons_bin(hfile):
             cons.append(scons.rstrip())
 
         cons = np.array([c.ljust(4).lower() for c in cons])
+
+
+def read_otis_h_bin(hfile):
+    INT = np.dtype(">i4")
+    FLOAT = np.dtype(">f4")
+    CHAR = np.dtype(">c")
+
+    with open(hfile, "rb") as f:
+        ll = np.fromfile(f, INT, 1)[0]
+        nlat = np.fromfile(f, INT, 1)[0]
+        nlon = np.fromfile(f, INT, 1)[0]
+        ncons = np.fromfile(f, INT, 1)[0]
+        gridbound = np.fromfile(f, FLOAT, 4)
+        cid = []
+        for i in range(ncons):
+            scons = np.fromfile(f, CHAR, 4).tostring().upper()
+            cid.append(scons.rstrip())
+
+        nn = nlon * nlat
+        h = []
+        for i in range(ncons):
+            htemp = np.fromfile(f, FLOAT, 2 * nn)
+            h.append(np.reshape(htemp[::2] + 1j * htemp[1::2], (nlat, nlon)))
+
+    h = np.array(h)
+    hRe = np.real(h) 
+    hIm = np.imag(h) 
+
+    return hRe, hIm
+
+
+def read_otis_uv_bin(uvfile, ncons):
+    URe, UIm, VRe, VIm = [], [], [], []
+
+    for ic in range(ncons):
+        with open(uvfile,'rb') as f:
+            ll = np.fromfile(f, dtype=np.int32, count=1)
+            nm = np.fromfile(f, dtype=np.int32, count=3)
+            th_lim = np.fromfile(f, dtype=np.float32, count=2)
+            ph_lim = np.fromfile(f, dtype=np.float32, count=2)
+
+            # Need to go from little endian to big endian
+            ll.byteswap(True)
+            nm.byteswap(True)
+            th_lim.byteswap(True)
+            ph_lim.byteswap(True)
+            
+            n = nm[0]
+            m = nm[1]
+            nc = nm[2]
+
+            # Read the actual data
+            nskip = int((ic) * (nm[0] * nm[1] * 16 + 8) + 8 + ll - 28)
+            f.seek(nskip, 1)
+            tmp = np.fromfile(f, dtype=np.float32, count=4 * n * m)
+            tmp.byteswap(True)
+
+        tmp = np.reshape(tmp, (4 * n, m))
+        URe.append( tmp[0 : 4 * n - 3 : 4, :] )
+        UIm.append( tmp[1 : 4 * n - 2 : 4, :] )
+        VRe.append( tmp[2 : 4 * n - 1 : 4, :] )
+        VIm.append( tmp[3 : 4 * n : 4, :] )
+
+    URe, UIm = np.array(URe), np.array(UIm)
+    VRe, VIm = np.array(VRe), np.array(VIm)
+
+    return URe, UIm, VRe, VIm
+
 
 
 def otisbin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
@@ -614,8 +685,8 @@ def otisbin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
 	"""
     lon_z, lat_z, lon_u, lat_u, lon_v, lat_v, hz, mz = read_otis_grd_bin(gfile)
     con = read_otis_cons_bin(hfile)
-
-
+    hRe, hIm = read_otis_h_bin(hfile)
+    URe, UIm, VRe, VIm = read_otis_uv_bin(uvfile, len(ncons))
 
 
 
