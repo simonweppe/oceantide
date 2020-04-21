@@ -36,16 +36,27 @@ class NCOtis(object):
         drop_amp_params (bool):  Option to drop amplitude parameters (they are not used
                                  for ROMS tide file because complex params are more
                                  appropraite for remapping)
+        x0, x1, y0, y1 (float):  Bounds for subsetting, default = None, which is no subsetting
+        catalog (str):           Intake catalog that has the source constituents dataset
+        namespace (str):         Intake namespace
     """
 
     name = "otis"  # necessary for remap to play nicely
 
     def __init__(
-        self, model="tpxo9", drop_amp_params=True, x0=None, x1=None, y0=None, y1=None,
+        self,
+        model="tpxo9",
+        drop_amp_params=True,
+        x0=None,
+        x1=None,
+        y0=None,
+        y1=None,
+        catalog=ONTAKE_CATALOG,
+        namespace=ONTAKE_NAMESPACE,
     ):
         self.model = model
         print(f"Loading {model} from intake catalog")
-        ot = Ontake(namespace=ONTAKE_NAMESPACE, master_url=ONTAKE_CATALOG)
+        ot = Ontake(namespace=namespace, master_url=catalog)
         self.ds = ot.dataset(model)
 
         # if subset is requested, better to run it before any operation
@@ -236,24 +247,25 @@ class NCOtis(object):
 
 
 def predict_tide_grid(
-    lon, lat, time, model="tpxo9", conlist=None, outfile=None,
+    lon, lat, time, model="tpxo9", catalog=ONTAKE_CATALOG, namespace=ONTAKE_NAMESPACE, conlist=None, outfile=None,
 ):
     """ Performs a tidal prediction at all points in [lon,lat] at times.
 
 	Args:
 	
-	model (str):                Intake dataset of the regional OTIS model. 
-                                TIP: use ontake to discover datasets:
-                                    ot = Ontake(namespace='tide', 
-                                                master_url='gs://oceanum-catalog/oceanum.yml')
-                                    ot.datasets
-                                TODO: convert to zarr and use fsspec to generalize this
 	lon, lat (numpy ndarray): Each is an n-length array of longitude 
                                 and latitudes in degrees to perform predictions at.
                                 Lat ranges from -90 to 90. Lon can range from -180 to 360.
   	time:                     m-length array of times.  Acceptable formats are 
                                 a list of `datetime` objects, a list or array of 
                                 `np.datetime64` objects, or pandas date_range
+    model (str):              Intake dataset of the regional OTIS model. 
+                                TIP: use ontake to discover datasets:
+                                    ot = Ontake(namespace='tide', 
+                                                master_url='gs://oceanum-catalog/oceanum.yml')
+                                    ot.datasets
+    catalog (str):            Intake catalog that has the source constituents dataset
+    namespace (str):          Intake namespace
 	conlist :                 List of strings (optional). If supplied, gives a list 
                                 of tidal constituents to include in prediction. 
                                 Available are 'M2', 'S2', 'N2', 'K2', 'K1', 'O1', 'P1', 'Q1'
@@ -929,12 +941,14 @@ def otisbin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
 
     # TODO probably need to write something like _fix_lon() here before saving zarr file
 
-    if outfile.endswith('.zarr'):
+    if outfile.endswith(".zarr"):
         logging.info(f"Writting {outfile}")
         ds.to_zarr(get_mapper(outfile), consolidated=True)
-    elif outfile.endswith('.nc'):
-        ds.to_netcdf(outfile, format='NETCDF4')
+    elif outfile.endswith(".nc"):
+        ds.to_netcdf(outfile, format="NETCDF4")
     else:
-        raise Exception('outfile must have either .nc or .zarr extension and be comptible with fsspec notation')
+        raise Exception(
+            "outfile must have either .nc or .zarr extension and be comptible with fsspec notation"
+        )
 
     return ds

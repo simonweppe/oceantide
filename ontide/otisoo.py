@@ -12,7 +12,7 @@ from ontide.otis import otisbin2xr
 
 
 BUCKET = "oceanum-tide"
-ROOTDIR = os.path.abspath("../otisoo")
+ROOTDIR = os.path.join(os.path.dirname(__file__), '../otisoo')
 RUNDIR = "/tmp/otisoo"
 DIRTREE = ["exe", "dat", "prm", "repx1", "out", "bathy"]
 DBDIR = "/data/tide/otis_binary/DB"
@@ -26,7 +26,8 @@ class OTISoo(object):
             dataset_id (str)         ::  name for the regional cons file
             x0, x1, y0, y1 (float)   ::  domain corners (only regular grid supported)
             dx, dy (float)           ::  resolution (preferably dx == dy)
-            bnd (str)                ::  path for the OTIS binary that will serve as a parent model
+            bnd (str)                ::  path for the OTIS binary that will serve as a parent model 
+                                         (must be the elevation file)
             outfile (str)            ::  path for the output cons zarr or netcdf file (smarts based on file extension). 
                                             IMPORTANT: if "gs" is in the pathname, 
                                             the zarr file will become operational, which means:
