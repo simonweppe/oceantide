@@ -7,7 +7,7 @@
 import os, shutil, glob, logging
 import numpy as np
 from google.cloud import storage, bigquery
-from ondata.download.gebco import get_gebco
+from ondata.download.bathy import get_bathy
 from ontide.otis import otisbin2xr
 
 
@@ -26,6 +26,7 @@ class OTISoo(object):
             dataset_id (str)         ::  name for the regional cons file
             x0, x1, y0, y1 (float)   ::  domain corners (only regular grid supported)
             dx, dy (float)           ::  resolution (preferably dx == dy)
+            bathy (str)              ::  intake dataset ID for bathy data
             bnd (str)                ::  path for the OTIS binary that will serve as a parent model 
                                          (must be the elevation file)
             outfile (str)            ::  path for the output cons zarr or netcdf file (smarts based on file extension). 
@@ -62,6 +63,7 @@ class OTISoo(object):
         y1,
         dx=0.01,
         dy=0.01,
+        bathy="gebco_2019",
         bnd="/data/tide/otis_binary/h_tpxo9",
         outfile=None,
         gcp_sa=None,
@@ -70,6 +72,7 @@ class OTISoo(object):
         self.localdir = os.path.join(RUNDIR, dataset_id)
         self.x0, self.x1, self.y0, self.y1 = x0, x1, y0, y1
         self.dx, self.dy = dx, dy
+        self.bathy = bathy
         self.bnd = bnd
         self.outfile = outfile or f"gs://oceanum-tide/gridcons/{dataset_id}.zarr"
         self.gcp_sa = gcp_sa
@@ -77,13 +80,14 @@ class OTISoo(object):
     def make_bathy(self):
         logging.info("Creating bathy and OTISoo grid")
 
-        ds = get_gebco(
+        ds = get_bathy(
             x0=self.x0,
             x1=self.x1,
             y0=self.y0,
             y1=self.y1,
             dx=self.dx,
             dy=self.dy,
+            datasource=self.bathy,
             vmin=-9,
             masked=True,
         ).load()

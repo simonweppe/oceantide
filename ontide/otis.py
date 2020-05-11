@@ -247,7 +247,14 @@ class NCOtis(object):
 
 
 def predict_tide_grid(
-    lon, lat, time, model="tpxo9", catalog=ONTAKE_CATALOG, namespace=ONTAKE_NAMESPACE, conlist=None, outfile=None,
+    lon,
+    lat,
+    time,
+    model="tpxo9",
+    catalog=ONTAKE_CATALOG,
+    namespace=ONTAKE_NAMESPACE,
+    conlist=None,
+    outfile=None,
 ):
     """ Performs a tidal prediction at all points in [lon,lat] at times.
 
@@ -290,7 +297,15 @@ def predict_tide_grid(
 	ds = predict_tide_grid(lon, lat, time) 
 	"""
 
-    otis = NCOtis(model, x0=lon.min(), x1=lon.max(), y0=lat.min(), y1=lat.max())
+    otis = NCOtis(
+        model,
+        x0=lon.min(),
+        x1=lon.max(),
+        y0=lat.min(),
+        y1=lat.max(),
+        catalog=catalog,
+        namespace=namespace,
+    )
     print("Flooding land to avoid interpolation noise")
     otis.flood()
     conlist = conlist or otis.cons
@@ -570,8 +585,8 @@ def read_otis_grd_bin(grdfile):
         np.linspace(lon_z[0], lon_z[1], n), np.linspace(lat_z[0], lat_z[1], m)
     )
 
-    if (lon_z[0, 0] < 0) & (lon_z[0, 1] < 0):
-        lon_z = lon_z + 360
+    # if (lon_z[0, 0] < 0) & (lon_z[0, 1] < 0): TODO need to write a proper fix_lon here
+    #     lon_z = lon_z + 360
 
     # WARNING: assuming OTIS grids will always be regular, easier than deducting from the binaries
     d2 = (lon_z[1, 0] - lon_z[0, 0]) / 2.0
