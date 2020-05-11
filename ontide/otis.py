@@ -436,6 +436,7 @@ def _regrid(otis, lon, lat):
 
 
 def _interp(arr, x, y, x2, y2):
+    # from IPython import embed; embed()
     arr, x, y = arr.values, x.values, y.values
     arr[np.isnan(arr) == 1] = 0
     spl = interpolate.RectBivariateSpline(x[0, :], y[:, 0], arr.T)

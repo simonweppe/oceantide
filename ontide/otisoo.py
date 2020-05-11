@@ -92,6 +92,8 @@ class OTISoo(object):
             masked=True,
         ).load()
 
+        # from IPython import embed; embed()
+
         x, y = np.meshgrid(ds.lon.values, ds.lat.values)
 
         y, x, h = y.ravel(), x.ravel(), ds.depth.values.ravel()
