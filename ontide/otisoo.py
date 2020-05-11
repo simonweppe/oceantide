@@ -27,6 +27,8 @@ class OTISoo(object):
             x0, x1, y0, y1 (float)   ::  domain corners (only regular grid supported)
             dx, dy (float)           ::  resolution (preferably dx == dy)
             bathy (str)              ::  intake dataset ID for bathy data
+            hmin (int)               ::  minimum depth for the model [m]. MINIMUM ALLOWED VALUE = 2
+            smooth_fac (int)         ::  size of the rolling window for bathy smoothing (xr.rolling() is being used across lon and lat)
             bnd (str)                ::  path for the OTIS binary that will serve as a parent model 
                                          (must be the elevation file)
             outfile (str)            ::  path for the output cons zarr or netcdf file (smarts based on file extension). 
@@ -64,6 +66,8 @@ class OTISoo(object):
         dx=0.01,
         dy=0.01,
         bathy="gebco_2019",
+        smooth_fac=None,
+        hmin=2,
         bnd="/data/tide/otis_binary/h_tpxo9",
         outfile=None,
         gcp_sa=None,
@@ -73,6 +77,8 @@ class OTISoo(object):
         self.x0, self.x1, self.y0, self.y1 = x0, x1, y0, y1
         self.dx, self.dy = dx, dy
         self.bathy = bathy
+        self.hmin = hmin
+        self.smooth_fac = smooth_fac
         self.bnd = bnd
         self.outfile = outfile or f"gs://oceanum-tide/gridcons/{dataset_id}.zarr"
         self.gcp_sa = gcp_sa
@@ -88,17 +94,21 @@ class OTISoo(object):
             dx=self.dx,
             dy=self.dy,
             datasource=self.bathy,
-            vmin=-9,
+            vmin=self.hmin,
             masked=True,
         ).load()
+
+        if self.smooth_fac != None:
+            ds = ds.rolling(lon=self.smooth_fac, center=True).mean()
+            ds = ds.rolling(lat=self.smooth_fac, center=True).mean()
 
         # from IPython import embed; embed()
 
         x, y = np.meshgrid(ds.lon.values, ds.lat.values)
 
         y, x, h = y.ravel(), x.ravel(), ds.depth.values.ravel()
-        h[np.isnan(h) == 1] = 2
-        h[h < 2] = 2  # min depth required to be 2m by OTISoo
+        h[np.isnan(h) == 1] = self.hmin
+        h[h < self.hmin] = self.hmin  # min depth required to be 2m by OTISoo
         dat = np.vstack((y, x, h)).T
         logging.info(dat[:5, :])
 
