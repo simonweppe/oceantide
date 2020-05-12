@@ -12,7 +12,7 @@ from ontide.otis import otisbin2xr
 
 
 BUCKET = "oceanum-tide"
-ROOTDIR = os.path.join(os.path.dirname(__file__), '../otisoo')
+ROOTDIR = os.path.join(os.path.dirname(__file__), "../otisoo")
 RUNDIR = "/tmp/otisoo"
 DIRTREE = ["exe", "dat", "prm", "repx1", "out", "bathy"]
 DBDIR = "/data/tide/otis_binary/DB"
@@ -105,10 +105,10 @@ class OTISoo(object):
         # from IPython import embed; embed()
 
         x, y = np.meshgrid(ds.lon.values, ds.lat.values)
+        h = ds.depth.values
+        h[np.isnan(h) == 1] = -9  # so the inverse model knows where the mask is
 
         y, x, h = y.ravel(), x.ravel(), ds.depth.values.ravel()
-        h[np.isnan(h) == 1] = self.hmin
-        h[h < self.hmin] = self.hmin  # min depth required to be 2m by OTISoo
         dat = np.vstack((y, x, h)).T
         logging.info(dat[:5, :])
 

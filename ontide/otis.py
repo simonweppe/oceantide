@@ -5,6 +5,7 @@
 import os
 import logging
 import numpy as np
+import numpy.ma as ma
 from scipy import interpolate
 import netCDF4
 import xarray as xr
@@ -722,6 +723,19 @@ def otisbin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
 
     uIm, uRe = np.array(uIm), np.array(uRe)
     vIm, vRe = np.array(vIm), np.array(vRe)
+
+    # applying landmask
+    landmask = mz[None, ...].repeat(con.size, axis=0)
+    hRe = ma.masked_where(landmask == 0, hRe)
+    hIm = ma.masked_where(landmask == 0, hIm)
+    uRe = ma.masked_where(landmask == 0, uRe)
+    uIm = ma.masked_where(landmask == 0, uIm)
+    URe = ma.masked_where(landmask == 0, URe)
+    UIm = ma.masked_where(landmask == 0, UIm)
+    vRe = ma.masked_where(landmask == 0, vRe)
+    vIm = ma.masked_where(landmask == 0, vIm)
+    VRe = ma.masked_where(landmask == 0, vRe)
+    VIm = ma.masked_where(landmask == 0, VIm)
 
     dims = ("nc", "ny", "nx")
 
