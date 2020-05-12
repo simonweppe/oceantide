@@ -351,8 +351,8 @@ def predict_tide_grid(
     rvars = _remask(rvars, otis, lon, lat)
     fill_value = rvars["u"].fill_value
 
-    for varname, var in rvars.items():
-        rvars[varname] = var.filled(var.fill_value)
+    # for varname, var in rvars.items():
+    #     rvars[varname] = var.filled(var.fill_value)
 
     ha = xr.DataArray(
         dims=("time", "lat", "lon"),
