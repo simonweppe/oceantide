@@ -72,12 +72,11 @@ class NCOtis(object):
 
         self._fix_topo()
         self._mask_vars()
-        self._transp2vel()
 
     def __repr__(self):
         _repr = "<OTIS {} nc={} x0={:0.2f} x1={:0.2f} y0={:0.2f} y1={:0.2f} subset={}>".format(
             self.model,
-            self.ds.dims["nc"],
+            self.ds.dims["con"],
             self.ds.lon_z.values.min(),
             self.ds.lon_z.values.max(),
             self.ds.lat_z.values.min(),
@@ -109,28 +108,6 @@ class NCOtis(object):
             if len(var.dims) > 2:  # leaving cons and coords out
                 var.values = np.ma.masked_where(var.values == 0, var.values)
 
-    def _transp2vel(self):
-        """ Compute complex velocities based on complex transports and append 
-            them to the xr.Dataset
-        
-        """
-        longname = "Tidal WE transport complex ampl., {c} part, at {n}-nodes"
-        variables = dict(uRe=None, uIm=None, vRe=None, vIm=None)
-
-        for node in ["u", "v"]:
-            for com in ["Re", "Im"]:
-                variables["{}{}".format(node, com)] = xr.Variable(
-                    self.ds["{}{}".format(node.upper(), com)].dims,
-                    self.ds["{}{}".format(node.upper(), com)].values
-                    / self.ds["h{}".format(node)].values,
-                    attrs=dict(
-                        long_name=longname.format(c=com, n=node.upper()),
-                        units="meter/s",
-                    ),
-                )
-
-        self.ds = self.ds.assign(variables=variables)
-
     @property
     def cons(self):
         """ Nicely formatted cons attribute
@@ -161,42 +138,43 @@ class NCOtis(object):
               are being used for anything we need.  
         """
         self.was_subsetted = True
-        f = np.where(
-            (self.ds.lon_z.values >= x0)
-            & (self.ds.lon_z.values <= x1)
-            & (self.ds.lat_z.values >= y0)
-            & (self.ds.lat_z.values <= y1)
-        )
-        x0, x1, y0, y1 = f[1].min(), f[1].max(), f[0].min(), f[0].max()
+        # from IPython import embed; embed()
+        # f = np.where(
+        #     (self.ds.lon_z.values >= x0)
+        #     & (self.ds.lon_z.values <= x1)
+        #     & (self.ds.lat_z.values >= y0)
+        #     & (self.ds.lat_z.values <= y1)
+        # )
+        # x0, x1, y0, y1 = f[1].min(), f[1].max(), f[0].min(), f[0].max()
 
-        # compute vertices and angle before we lose the indexes in isel
-        self.lon_t_vert = 0.5 * (
-            self.ds.lon_z.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
-            + self.ds.lon_z.values[y0 : y1 + 2, x0 : x1 + 2]
-        )
-        self.lat_t_vert = 0.5 * (
-            self.ds.lat_z.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
-            + self.ds.lat_z.values[y0 : y1 + 2, x0 : x1 + 2]
-        )
-        self.lon_u_vert = 0.5 * (
-            self.ds.lon_u.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
-            + self.ds.lon_u.values[y0 : y1 + 2, x0 : x1 + 2]
-        )
-        self.lat_u_vert = 0.5 * (
-            self.ds.lat_u.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
-            + self.ds.lat_u.values[y0 : y1 + 2, x0 : x1 + 2]
-        )
-        self.lon_v_vert = 0.5 * (
-            self.ds.lon_v.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
-            + self.ds.lon_v.values[y0 : y1 + 2, x0 : x1 + 2]
-        )
-        self.lat_v_vert = 0.5 * (
-            self.ds.lat_v.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
-            + self.ds.lat_v.values[y0 : y1 + 2, x0 : x1 + 2]
-        )
+        # # compute vertices and angle before we lose the indexes in isel
+        # self.lon_t_vert = 0.5 * (
+        #     self.ds.lon_z.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
+        #     + self.ds.lon_z.values[y0 : y1 + 2, x0 : x1 + 2]
+        # )
+        # self.lat_t_vert = 0.5 * (
+        #     self.ds.lat_z.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
+        #     + self.ds.lat_z.values[y0 : y1 + 2, x0 : x1 + 2]
+        # )
+        # self.lon_u_vert = 0.5 * (
+        #     self.ds.lon_u.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
+        #     + self.ds.lon_u.values[y0 : y1 + 2, x0 : x1 + 2]
+        # )
+        # self.lat_u_vert = 0.5 * (
+        #     self.ds.lat_u.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
+        #     + self.ds.lat_u.values[y0 : y1 + 2, x0 : x1 + 2]
+        # )
+        # self.lon_v_vert = 0.5 * (
+        #     self.ds.lon_v.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
+        #     + self.ds.lon_v.values[y0 : y1 + 2, x0 : x1 + 2]
+        # )
+        # self.lat_v_vert = 0.5 * (
+        #     self.ds.lat_v.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
+        #     + self.ds.lat_v.values[y0 : y1 + 2, x0 : x1 + 2]
+        # )
 
         # finally, subsetting
-        self.ds = self.ds.isel(nx=slice(x0, x1), ny=slice(y0, y1))
+        self.ds = self.ds.sel(lon_z=slice(x0, x1), lat_z=slice(y0, y1))
         print(self.__repr__())
 
     def flood(self, dmax=1):
@@ -216,15 +194,16 @@ class NCOtis(object):
 
         msk = np.isnan(self.ds[var3d].values[0, ...])
 
-        for k in range(self.ds.dims["nc"]):
+        for k in range(self.ds.dims["con"]):
             for varname, var in self.ds.data_vars.items():
-                if len(var.dims) > 2:  # leaving cons and coords out
-                    for varname2, var2 in self.ds.data_vars.items():
-                        if varname2.startswith("lon"):
-                            lonv = varname2
-                        if varname2.startswith("lat"):
-                            latv = varname2
+                if len(var.dims) > 2:  # leaving depths and masks out
+                    for key, coord in var.coords.items():
+                        if "lon" in key:
+                            lon = coord.values
+                        if "lat" in key:
+                            lat = coord.values
 
+                    lon, lat = np.meshgrid(lon, lat)
                     msk = np.isnan(var.values[k, ...])
                     idxnan = np.where(msk == True)
                     idx = np.where(msk == False)
@@ -238,12 +217,7 @@ class NCOtis(object):
                         dry[:, 1] = idxnan[1] + 1
 
                     var.values[k, ...] = pyroms._remapping.flood(
-                        var.values[k, ...],
-                        wet,
-                        dry,
-                        self.ds[lonv].values,
-                        self.ds[latv].values,
-                        dmax,
+                        var.values[k, ...], wet, dry, lon, lat, dmax,
                     )
 
 
@@ -423,8 +397,8 @@ def _regrid(otis, lon, lat):
             )  # because OTIS doesn't follow conventions :/
             var[idx, :] = _interp(
                 otis.ds.data_vars[varname][idx, ...],
-                otis.ds.data_vars["lon_{}".format(p)],
-                otis.ds.data_vars["lat_{}".format(p)],
+                otis.ds.coords[f"lon_{p}"],
+                otis.ds.coords[f"lat_{p}"],
                 lon.ravel(),
                 lat.ravel(),
             )
@@ -440,7 +414,7 @@ def _interp(arr, x, y, x2, y2):
     # from IPython import embed; embed()
     arr, x, y = arr.values, x.values, y.values
     arr[np.isnan(arr) == 1] = 0
-    spl = interpolate.RectBivariateSpline(x[0, :], y[:, 0], arr.T)
+    spl = interpolate.RectBivariateSpline(x, y, arr.T)
     return spl(x2, y2, grid=False)
 
 
@@ -480,6 +454,30 @@ def _fix_east(ds):
     return ds
 
 
+def _transp2vel(ds):
+        """ Compute complex velocities based on complex transports and append 
+            them to the xr.Dataset
+        
+        """
+        print("Computing complex velocities based on complex transports")
+        longname = "Tidal WE transport complex ampl., {c} part, at {n}-nodes"
+        variables = dict(uRe=None, uIm=None, vRe=None, vIm=None)
+
+        for node in ["u", "v"]:
+            for com in ["Re", "Im"]:
+                variables["{}{}".format(node, com)] = xr.Variable(
+                    ds["{}{}".format(node.upper(), com)].dims,
+                    ds["{}{}".format(node.upper(), com)].values
+                    / ds["h{}".format(node)].values,
+                    attrs=dict(
+                        long_name=longname.format(c=com, n=node.upper()),
+                        units="meter/s",
+                    ),
+                )
+
+        ds = ds.assign(variables=variables)
+        return ds
+
 def otisnc2zarr(
     model="file:///data/tide/otis_netcdf/Model_tpxo9",
     outfile="gs://oceanum-tide/otis/DATA_zarr/tpxo9.zarr",
@@ -493,17 +491,19 @@ def otisnc2zarr(
         model (str):             Filename of the regional OTIS model file in fspec format
                                  Ex: gs://oceanum-prod/tide/Model_ES2008
         drop_amp_params (bool):  Option to drop amplitude parameters (they are not used
-                                 for ROMS tide file because complex params are more
+                                 for most cases because complex params are more
                                  appropriate for remapping)
 
     Developer notes:
         - this should replace both .load_otis and .CGrid_OTIS from pyroms
     """
-    with open(model) as f:
+    modelfile = get_mapper(model).root
+
+    with open(modelfile) as f:
         lines = f.readlines()
-        elevfile = os.path.join(os.path.dirname(model), lines[0].split("/")[-1]).strip()
-        curfile = os.path.join(os.path.dirname(model), lines[1].split("/")[-1]).strip()
-        gfile = os.path.join(os.path.dirname(model), lines[2].split("/")[-1]).strip()
+        elevfile = os.path.join(os.path.dirname(modelfile), lines[0].split("/")[-1]).strip()
+        curfile = os.path.join(os.path.dirname(modelfile), lines[1].split("/")[-1]).strip()
+        gfile = os.path.join(os.path.dirname(modelfile), lines[2].split("/")[-1]).strip()
 
     dsg = xr.open_dataset(gfile)
     dsh = xr.open_dataset(elevfile)
@@ -521,6 +521,33 @@ def otisnc2zarr(
 
     ds = xr.merge([dsg, dsh, dsu])
     ds = _fix_east(ds)
+    ds = _transp2vel(ds)
+    
+    ds = make_cons_dataset(
+        ds.con.values,
+        ds.lon_z.values,
+        ds.lat_z.values,
+        ds.lon_u.values,
+        ds.lat_u.values,
+        ds.lon_v.values,
+        ds.lat_v.values,
+        ds.hRe.values,
+        ds.hIm.values,
+        ds.uRe.values,
+        ds.uIm.values,
+        ds.vRe.values,
+        ds.vIm.values,
+        ds.URe.values,
+        ds.UIm.values,
+        ds.VRe.values,
+        ds.VIm.values,
+        ds.hz.values,
+        ds.hu.values,
+        ds.hv.values,
+        ds.mz.values,
+        ds.mu.values,
+        ds.mv.values,
+    )
     ds.to_zarr("/tmp", os.path.basename(outfile), consolidated=True)
     # TODO write bucket copy
 
@@ -737,239 +764,32 @@ def otisbin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
     VRe = ma.masked_where(landmask == 0, vRe)
     VIm = ma.masked_where(landmask == 0, VIm)
 
-    dims = ("nc", "ny", "nx")
-
-    attrs = {
-        "description": "Tidal constituents file in OTIS format",
-        "institution": "Oceanum LTD",
-    }
-
-    UIm_a = xr.DataArray(
-        UIm,
-        dims=dims,
-        name="UIm",
-        attrs={
-            "field": "Im(U), vector W->E",
-            "long_name": "Tidal transport complex ampl., Imag part, at U-nodes",
-            "units": "meter^2/s",
-        },
-    )
-    URe_a = xr.DataArray(
-        URe,
-        dims=dims,
-        name="URe",
-        attrs={
-            "field": "Re(U), vector W->E",
-            "long_name": "Tidal transport complex ampl., Real part, at U-nodes",
-            "units": "meter^2/s",
-        },
-    )
-    VIm_a = xr.DataArray(
-        VIm,
-        dims=dims,
-        name="VIm",
-        attrs={
-            "field": "Im(V), vector W->E",
-            "long_name": "Tidal transport complex ampl., Imag part, at V-nodes",
-            "units": "meter^2/s",
-        },
-    )
-    VRe_a = xr.DataArray(
-        VRe,
-        dims=dims,
-        name="VRe",
-        attrs={
-            "field": "Re(V), vector W->E",
-            "long_name": "Tidal transport complex ampl., Real part, at V-nodes",
-            "units": "meter^2/s",
-        },
-    )
-    con_a = xr.DataArray(
-        con, dims=("nc"), name="con", attrs={"long_name": "Tidal constituents"}
-    )
-    hIm_a = xr.DataArray(
-        hIm,
-        dims=dims,
-        name="hIm",
-        attrs={
-            "field": "Im(h), scalar",
-            "long_name": "Tidal elevation complex amplitude, Imag part",
-            "units": "meter",
-        },
-    )
-    hRe_a = xr.DataArray(
-        hRe,
-        dims=dims,
-        name="hRe",
-        attrs={
-            "field": "Re(h), scalar",
-            "long_name": "Tidal elevation complex amplitude, Real part",
-            "units": "meter",
-        },
-    )
-    hu_a = xr.DataArray(
-        hz,
-        dims=("ny", "nx"),
-        name="hu",
-        attrs={
-            "field": "bathy, scalar",
-            "long_name": "Bathymetry at U-nodes",
-            "units": "meter",
-        },
-    )
-    hv_a = xr.DataArray(
-        hz,
-        dims=("ny", "nx"),
-        name="hv",
-        attrs={
-            "field": "bathy, scalar",
-            "long_name": "Bathymetry at V-nodes",
-            "units": "meter",
-        },
-    )
-    hz_a = xr.DataArray(
-        hz,
-        dims=("ny", "nx"),
-        name="hz",
-        attrs={
-            "field": "bathy, scalar",
-            "long_name": "Bathymetry at Z-nodes",
-            "units": "meter",
-        },
-    )
-    lat_u_a = xr.DataArray(
-        lat_u,
-        dims=("ny", "nx"),
-        name="lat_u",
-        attrs={"long_name": "latitude of U nodes", "units": "degree_north"},
-    )
-    lat_v_a = xr.DataArray(
-        lat_v,
-        dims=("ny", "nx"),
-        name="lat_v",
-        attrs={"long_name": "latitude of V nodes", "units": "degree_north"},
-    )
-    lat_z_a = xr.DataArray(
-        lat_z,
-        dims=("ny", "nx"),
-        name="lat_z",
-        attrs={"long_name": "latitude of Z nodes", "units": "degree_north"},
-    )
-    lon_u_a = xr.DataArray(
-        lon_u,
-        dims=("ny", "nx"),
-        name="lon_u",
-        attrs={"long_name": "longitude of U nodes", "units": "degree_east"},
-    )
-    lon_v_a = xr.DataArray(
-        lon_v,
-        dims=("ny", "nx"),
-        name="lon_v",
-        attrs={"long_name": "longitude of V nodes", "units": "degree_east"},
-    )
-    lon_z_a = xr.DataArray(
+    # creating xarray.Dataset ----------------------------------------------------
+    ds = make_cons_dataset(
+        con,
         lon_z,
-        dims=("ny", "nx"),
-        name="lon_z",
-        attrs={"long_name": "longitude of Z nodes", "units": "degree_east"},
-    )
-    mu_a = xr.DataArray(
-        mz,
-        dims=("ny", "nx"),
-        name="mu",
-        attrs={
-            "long_name": "water land mask on U nodes",
-            "option_0": "land",
-            "option_1": "water",
-        },
-    )
-    mv_a = xr.DataArray(
-        mz,
-        dims=("ny", "nx"),
-        name="mv",
-        attrs={
-            "long_name": "water land mask on V nodes",
-            "option_0": "land",
-            "option_1": "water",
-        },
-    )
-    mz_a = xr.DataArray(
-        mz,
-        dims=("ny", "nx"),
-        name="mz",
-        attrs={
-            "long_name": "water land mask on Z nodes",
-            "option_0": "land",
-            "option_1": "water",
-        },
-    )
-    uIm_a = xr.DataArray(
-        uIm,
-        dims=dims,
-        name="uIm",
-        attrs={
-            "long_name": "Tidal WE velocities complex ampl., Imag part, at U-nodes",
-            "units": "meter/s",
-        },
-    )
-    uRe_a = xr.DataArray(
+        lat_z,
+        lon_u,
+        lat_u,
+        lon_v,
+        lat_v,
+        hRe,
+        hIm,
         uRe,
-        dims=dims,
-        name="uRe",
-        attrs={
-            "long_name": "Tidal WE velocities complex ampl., Real part, at U-nodes",
-            "units": "meter/s",
-        },
-    )
-    vIm_a = xr.DataArray(
-        vIm,
-        dims=dims,
-        name="vIm",
-        attrs={
-            "long_name": "Tidal NS velocities complex ampl., Imag part, at V-nodes",
-            "units": "meter/s",
-        },
-    )
-    vRe_a = xr.DataArray(
+        uIm,
         vRe,
-        dims=dims,
-        name="vRe",
-        attrs={
-            "long_name": "Tidal NS velocities complex ampl., Real part, at V-nodes",
-            "units": "meter/s",
-        },
+        vIm,
+        URe,
+        UIm,
+        VRe,
+        VIm,
+        hz,
+        hz,
+        hz,
+        mz,
+        mz,
+        mz,
     )
-
-    ds = xr.Dataset(
-        data_vars={
-            "UIm": UIm_a,
-            "URe": URe_a,
-            "VIm": VIm_a,
-            "VRe": VRe_a,
-            "con": con_a,
-            "hIm": hIm_a,
-            "hRe": hRe_a,
-            "hu": hu_a,
-            "hv": hv_a,
-            "hz": hz_a,
-            "lat_u": lat_u_a,
-            "lat_v": lat_v_a,
-            "lat_z": lat_z_a,
-            "lon_u": lon_u_a,
-            "lon_v": lon_v_a,
-            "lon_z": lon_z_a,
-            "mu": mu_a,
-            "mv": mv_a,
-            "mz": mz_a,
-            "uIm": uIm_a,
-            "uRe": uRe_a,
-            "vIm": vIm_a,
-            "vRe": vRe_a,
-        },
-        attrs=attrs,
-    )
-
-    # TODO probably need to write something like _fix_lon() here before saving zarr file
 
     if outfile.endswith(".zarr"):
         logging.info(f"Writting {outfile}")
@@ -982,3 +802,332 @@ def otisbin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
         )
 
     return ds
+
+
+def make_cons_dataset(
+    con,
+    lon_z,
+    lat_z,
+    lon_u,
+    lat_u,
+    lon_v,
+    lat_v,
+    hRe,
+    hIm,
+    uRe,
+    uIm,
+    vRe,
+    vIm,
+    URe,
+    UIm,
+    VRe,
+    VIm,
+    hz,
+    hu,
+    hv,
+    mz,
+    mu,
+    mv,
+    ha=None,
+    hp=None,
+    ua=None,
+    up=None,
+    va=None,
+    vp=None,
+    Ua=None,
+    Up=None,
+    Va=None,
+    Vp=None,
+    attrs={
+        "description": "Tidal constituents in OTIS format",
+        "institutuon": "Oceanum Ltd",
+    },
+):
+    """ Create xarray.Dataset with tidal constituents consisting of merged OTIS format
+            based on raw numpy arrays.
+
+        It can be used to create netcdf or zarr files
+        
+        REQUIREMENTS: 
+            - All variables must be masked
+            - Elevations and currents arrays must have (nc, ny, nx) dimensions, where
+                    nc = number of constituents
+            - Depths and landmasks must have (ny, nx) dimensions
+            - Constituents arrays must be numpy.ndarray with dtype='|S4' 
+
+    Args:
+        ----------- Coordinates (required) ---------------------------------------------
+        con (numpy.ndarray, dtype='|S4'): Tidal onstituents
+        lon_z (numpy.ndarray 1D): Lon coordinates at Z-points 
+        lat_z (numpy.ndarray 1D): Lat coordinates at Z-points 
+        lon_u (numpy.ndarray 1D): Lon coordinates at U-points 
+        lat_u (numpy.ndarray 1D): Lat coordinates at U-points 
+        lon_v (numpy.ndarray 1D): Lon coordinates at V-points 
+        lat_v (numpy.ndarray 1D): Lat coordinates at V-points 
+        ----------- Complex parameters (required) --------------------------------------
+        hRe, hIm (numpy.ma.core.MaskedArray): Complex tidal elevation amplitude
+        uRe, uIm (numpy.ma.core.MaskedArray): Complex tidal U-current amplitude
+        vRe, vIm (numpy.ma.core.MaskedArray): Complex tidal V-current amplitude
+        URe, UIm (numpy.ma.core.MaskedArray): Complex tidal U-transport amplitude
+        VRe, VIm (numpy.ma.core.MaskedArray): Complex tidal V-transport amplitude
+        ----------- Miscelania ---------------------------------------------------------
+        hz, hu, hv (numpy.ndarray): Depths at U, V, Z points
+        mz, mu, mv (numpy.ndarray): Landmask at U, V, Z points
+        attrs (dict): Dataset global attributes dictionary (optional)  
+        ----------- Amplitude / Phase parameters (optional) ----------------------------
+        ha, hp   (numpy.ma.core.MaskedArray): Elevation amplitude and phase (optional)
+        ua, up   (numpy.ma.core.MaskedArray): U-current amplitude and phase (optional)
+        va, vp   (numpy.ma.core.MaskedArray): V-current amplitude and phase (optional)
+        Ua, Up   (numpy.ma.core.MaskedArray): U-transport amplitude and phase (optional)
+        Va, Vp   (numpy.ma.core.MaskedArray): V-transport amplitude and phase (optional)
+        --------------------------------------------------------------------------------
+
+    Returns:
+        ds (xarray.Dataset)
+
+    TODO: perhaps use CDL to create a skeleton Dataset and fill it up?
+    TODO: write the amplitude parameters metadata and include them
+    """
+    assert not any([ha, hp, ua, up, va, vp, Ua, Up, Va, Vp]) or all(
+        [ha, hp, ua, up, va, vp, Ua, Up, Va, Vp]
+    ), "All Amplitude / Phase parameters must be provided"
+
+    # coordinates
+    cc = xr.IndexVariable(["con"], con, attrs={"long_name": "Tidal constituents"})
+
+    yu = xr.IndexVariable(
+        ["lat_u"],
+        lat_u[:, 0],
+        attrs={"long_name": "latitude of U nodes", "units": "degree_north"},
+    )
+    xu = xr.IndexVariable(
+        ["lon_u"],
+        lon_u[0, :],
+        attrs={"long_name": "longitude of U nodes", "units": "degree_east"},
+    )
+    yv = xr.IndexVariable(
+        ["lat_v"],
+        lat_v[:, 0],
+        attrs={"long_name": "latitude of V nodes", "units": "degree_north"},
+    )
+    xv = xr.IndexVariable(
+        ["lon_v"],
+        lon_v[0, :],
+        attrs={"long_name": "longitude of V nodes", "units": "degree_east"},
+    )
+    yz = xr.IndexVariable(
+        ["lat_z"],
+        lat_z[:, 0],
+        attrs={"long_name": "latitude of Z nodes", "units": "degree_north"},
+    )
+    xz = xr.IndexVariable(
+        ["lon_z"],
+        lon_z[0, :],
+        attrs={"long_name": "longitude of Z nodes", "units": "degree_east"},
+    )
+
+    # data variables
+    UIm_a = xr.DataArray(
+        UIm,
+        coords=[cc, yu, xu],
+        name="UIm",
+        attrs={
+            "field": "Im(U), vector W->E",
+            "long_name": "Tidal transport complex ampl., Imag part, at U-nodes",
+            "units": "meter^2/s",
+        },
+    )
+    URe_a = xr.DataArray(
+        URe,
+        coords=[cc, yu, xu],
+        name="URe",
+        attrs={
+            "field": "Re(U), vector W->E",
+            "long_name": "Tidal transport complex ampl., Real part, at U-nodes",
+            "units": "meter^2/s",
+        },
+    )
+    VIm_a = xr.DataArray(
+        VIm,
+        coords=[cc, yv, xv],
+        name="VIm",
+        attrs={
+            "field": "Im(V), vector W->E",
+            "long_name": "Tidal transport complex ampl., Imag part, at V-nodes",
+            "units": "meter^2/s",
+        },
+    )
+    VRe_a = xr.DataArray(
+        VRe,
+        coords=[cc, yv, xv],
+        name="VRe",
+        attrs={
+            "field": "Re(V), vector W->E",
+            "long_name": "Tidal transport complex ampl., Real part, at V-nodes",
+            "units": "meter^2/s",
+        },
+    )
+    hIm_a = xr.DataArray(
+        hIm,
+        coords=[cc, yz, xz],
+        name="hIm",
+        attrs={
+            "field": "Im(h), scalar",
+            "long_name": "Tidal elevation complex amplitude, Imag part",
+            "units": "meter",
+        },
+    )
+    hRe_a = xr.DataArray(
+        hRe,
+        coords=[cc, yz, xz],
+        name="hRe",
+        attrs={
+            "field": "Re(h), scalar",
+            "long_name": "Tidal elevation complex amplitude, Real part",
+            "units": "meter",
+        },
+    )
+    hu_a = xr.DataArray(
+        hz,
+        coords=[yu, xu],
+        name="hu",
+        attrs={
+            "field": "bathy, scalar",
+            "long_name": "Bathymetry at U-nodes",
+            "units": "meter",
+        },
+    )
+    hv_a = xr.DataArray(
+        hz,
+        coords=[yv, xv],
+        name="hv",
+        attrs={
+            "field": "bathy, scalar",
+            "long_name": "Bathymetry at V-nodes",
+            "units": "meter",
+        },
+    )
+    hz_a = xr.DataArray(
+        hz,
+        coords=[yz, xz],
+        name="hz",
+        attrs={
+            "field": "bathy, scalar",
+            "long_name": "Bathymetry at Z-nodes",
+            "units": "meter",
+        },
+    )
+    mu_a = xr.DataArray(
+        mz,
+        coords=[yu, xu],
+        name="mu",
+        attrs={
+            "long_name": "water land mask on U nodes",
+            "option_0": "land",
+            "option_1": "water",
+        },
+    )
+    mv_a = xr.DataArray(
+        mz,
+        coords=[yv, xv],
+        name="mv",
+        attrs={
+            "long_name": "water land mask on V nodes",
+            "option_0": "land",
+            "option_1": "water",
+        },
+    )
+    mz_a = xr.DataArray(
+        mz,
+        coords=[yz, xz],
+        name="mz",
+        attrs={
+            "long_name": "water land mask on Z nodes",
+            "option_0": "land",
+            "option_1": "water",
+        },
+    )
+    uIm_a = xr.DataArray(
+        uIm,
+        coords=[cc, yu, xu],
+        name="uIm",
+        attrs={
+            "long_name": "Tidal WE velocities complex ampl., Imag part, at U-nodes",
+            "units": "meter/s",
+        },
+    )
+    uRe_a = xr.DataArray(
+        uRe,
+        coords=[cc, yu, xu],
+        name="uRe",
+        attrs={
+            "long_name": "Tidal WE velocities complex ampl., Real part, at U-nodes",
+            "units": "meter/s",
+        },
+    )
+    vIm_a = xr.DataArray(
+        vIm,
+        coords=[cc, yv, xv],
+        name="vIm",
+        attrs={
+            "long_name": "Tidal NS velocities complex ampl., Imag part, at V-nodes",
+            "units": "meter/s",
+        },
+    )
+    vRe_a = xr.DataArray(
+        vRe,
+        coords=[cc, yv, xv],
+        name="vRe",
+        attrs={
+            "long_name": "Tidal NS velocities complex ampl., Real part, at V-nodes",
+            "units": "meter/s",
+        },
+    )
+
+    if all([ha, hp, ua, up, va, vp, Ua, Up, Va, Vp]):
+        # TODO: write those data variables here and add them to the dataset below
+        raise NotImplementedError
+
+    data_vars = {
+        "UIm": UIm_a,
+        "URe": URe_a,
+        "VIm": VIm_a,
+        "VRe": VRe_a,
+        "hIm": hIm_a,
+        "hRe": hRe_a,
+        "hu": hu_a,
+        "hv": hv_a,
+        "hz": hz_a,
+        "mu": mu_a,
+        "mv": mv_a,
+        "mz": mz_a,
+        "uIm": uIm_a,
+        "uRe": uRe_a,
+        "vIm": vIm_a,
+        "vRe": vRe_a,
+    }
+
+    if all([ha, hp, ua, up, va, vp, Ua, Up, Va, Vp]):
+        # TODO: write those data variables here and add them to the dataset below
+        #     for var in [ha_a, hp_a, ua_a, up_a, va_a, vp_a, Ua_a, Up_a, Va_a, Vp_a]:
+        #         data_vars[var["name"]] = var
+        raise NotImplementedError
+
+    ds = xr.Dataset(data_vars=data_vars, attrs=attrs)
+
+    return ds
+
+
+def make_timeseries_dataset(
+    time, lon, lat,
+):
+    """ Create xarray.Dataset for gridded tide timeseries based on raw numpy arrays
+
+    Args:
+        lon :
+        lat :
+        et :
+        ut :
+        vt :
+    """
+    raise NotImplementedError
