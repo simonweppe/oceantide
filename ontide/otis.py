@@ -129,7 +129,14 @@ class NCOtis(object):
         TODO: Implement constituents subset 
         """
         self.was_subsetted = True
-        self.ds = self.ds.sel(lon_z=slice(x0, x1), lat_z=slice(y0, y1))
+        self.ds = self.ds.sel(
+            lon_z=slice(x0, x1),
+            lat_z=slice(y0, y1),
+            lon_u=slice(x0, x1),
+            lat_u=slice(y0, y1),
+            lon_v=slice(x0, x1),
+            lat_v=slice(y0, y1),
+        )
         print(self.__repr__())
 
     def flood(self, dmax=1):
@@ -236,8 +243,8 @@ def predict_tide_grid(
         catalog=catalog,
         namespace=namespace,
     )
-    # print("Flooding land to avoid interpolation noise")
-    # otis.flood()
+    print("Flooding land to avoid interpolation noise")
+    otis.flood()
     conlist = conlist or otis.cons
     omega = [OMEGA[c] for c in conlist]
 
@@ -1132,6 +1139,6 @@ def make_timeseries_dataset(
         },
     )
 
-    ds = xr.Dataset({"et": ha, "ut": ua, "vt": va})
+    ds = xr.Dataset({"et": ha, "ut": ua, "vt": va}, attrs=attrs)
 
     return ds
