@@ -323,14 +323,6 @@ def predict_tide_grid(
         rvars[varname] = var.reshape((nt, nj, ni))
 
     rvars = _remask(rvars, otis, lon, lat)
-    fill_value = rvars["u"].fill_value
-
-    # for varname, var in rvars.items():
-    #     rvars[varname] = var.filled(var.fill_value)
-    import pdb
-
-    pdb.set_trace()
-
     ds = make_timeseries_dataset(time, lon, lat, rvars["h"], rvars["u"], rvars["v"])
 
     if outfile:
