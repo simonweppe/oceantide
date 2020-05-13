@@ -272,7 +272,9 @@ def predict_tide_grid(
     for var in ["h", "u", "v"]:
         rvars[var] = np.zeros((nt, nj * ni))
 
+    print("Computing elevations and currents based on constituents")
     for k, om in enumerate(omega):
+        print(f'    {k+1} | {len(omega)}')
         for idx in range(nj * ni):
             for p in ["h", "u", "v"]:
                 rvars[p][:, idx] += pf[k] * cvars["{}Re".format(p)][k, idx] * np.cos(
