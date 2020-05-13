@@ -210,10 +210,10 @@ def predict_tide_grid(
 
 	Returns
 	xarray.Dataset containing:
-	    et : m-by-n numpy array of tidal heights
+	    et : 3D numpy array of tidal heights
 		     height is in meters
-	    ut : m-by-n numpy array of eastward tidal velocity [m/s]
-	    vt : m-by-n numpy array of northward tidal velocity [m/s]
+	    ut : 3D numpy array of eastward tidal velocity [m/s]
+	    vt : 3D numpy array of northward tidal velocity [m/s]
 
 	Examples
 	--------
@@ -236,8 +236,8 @@ def predict_tide_grid(
         catalog=catalog,
         namespace=namespace,
     )
-    print("Flooding land to avoid interpolation noise")
-    otis.flood()
+    # print("Flooding land to avoid interpolation noise")
+    # otis.flood()
     conlist = conlist or otis.cons
     omega = [OMEGA[c] for c in conlist]
 
@@ -1085,7 +1085,7 @@ def make_timeseries_dataset(
         It can be used to create netcdf or zarr files
 
     Args:
-        time ( 1D): Time coordinate
+        time (list of datetime objects 1D): Time coordinate
         lon (numpy.ndarray 2D): Lon coordinates
         lat (numpy.ndarray 2D): Lat coordinates 
         et (numpy.ma.core.MaskedArray 3D): Tidal elevations
