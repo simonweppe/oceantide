@@ -126,54 +126,9 @@ class NCOtis(object):
             y0:    Minimum latitude
             y1:    Maximum latitude
 
-        Developer notes:
-            - Implement constituents subset as well
-            - Done this in a rush, should probably abstract it better
-            - Idea here is that vertices and angle need derivatives, which 
-              cannot be computed in the global or regional grid, otherwise
-              we'd end up having to cut a couple of lines/cols at the boundaries
-            - As we are subsetting, we end up with spare lines/cols, so it allows
-              it to be done in a clean way. 
-            - Before anything, it needs to be checked if these vertices and angles
-              are being used for anything we need.  
+        TODO: Implement constituents subset 
         """
         self.was_subsetted = True
-        # from IPython import embed; embed()
-        # f = np.where(
-        #     (self.ds.lon_z.values >= x0)
-        #     & (self.ds.lon_z.values <= x1)
-        #     & (self.ds.lat_z.values >= y0)
-        #     & (self.ds.lat_z.values <= y1)
-        # )
-        # x0, x1, y0, y1 = f[1].min(), f[1].max(), f[0].min(), f[0].max()
-
-        # # compute vertices and angle before we lose the indexes in isel
-        # self.lon_t_vert = 0.5 * (
-        #     self.ds.lon_z.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
-        #     + self.ds.lon_z.values[y0 : y1 + 2, x0 : x1 + 2]
-        # )
-        # self.lat_t_vert = 0.5 * (
-        #     self.ds.lat_z.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
-        #     + self.ds.lat_z.values[y0 : y1 + 2, x0 : x1 + 2]
-        # )
-        # self.lon_u_vert = 0.5 * (
-        #     self.ds.lon_u.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
-        #     + self.ds.lon_u.values[y0 : y1 + 2, x0 : x1 + 2]
-        # )
-        # self.lat_u_vert = 0.5 * (
-        #     self.ds.lat_u.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
-        #     + self.ds.lat_u.values[y0 : y1 + 2, x0 : x1 + 2]
-        # )
-        # self.lon_v_vert = 0.5 * (
-        #     self.ds.lon_v.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
-        #     + self.ds.lon_v.values[y0 : y1 + 2, x0 : x1 + 2]
-        # )
-        # self.lat_v_vert = 0.5 * (
-        #     self.ds.lat_v.values[y0 - 1 : y1 + 1, x0 - 1 : x1 + 1]
-        #     + self.ds.lat_v.values[y0 : y1 + 2, x0 : x1 + 2]
-        # )
-
-        # finally, subsetting
         self.ds = self.ds.sel(lon_z=slice(x0, x1), lat_z=slice(y0, y1))
         print(self.__repr__())
 
