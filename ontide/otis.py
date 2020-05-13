@@ -327,41 +327,11 @@ def predict_tide_grid(
 
     # for varname, var in rvars.items():
     #     rvars[varname] = var.filled(var.fill_value)
+    import pdb
 
-    ha = xr.DataArray(
-        dims=("time", "lat", "lon"),
-        coords={"time": time, "lat": lat[:, 0], "lon": lon[0, ...]},
-        name="et",
-        data=rvars["h"],
-        attrs={
-            "standard_name": "tidal_sea_surface_height_above_mean_sea_level",
-            "units": "m",
-            "_FillValue": fill_value,
-        },
-    )
-    ua = xr.DataArray(
-        dims=("time", "lat", "lon"),
-        coords={"time": time, "lat": lat[:, 0], "lon": lon[0, ...]},
-        name="ut",
-        data=rvars["u"],
-        attrs={
-            "standard_name": "eastward_sea_water_velocity_due_to_tides",
-            "units": "m s^-1",
-            "_FillValue": fill_value,
-        },
-    )
-    va = xr.DataArray(
-        dims=("time", "lat", "lon"),
-        coords={"time": time, "lat": lat[:, 0], "lon": lon[0, ...]},
-        name="vt",
-        data=rvars["v"],
-        attrs={
-            "standard_name": "northward_sea_water_velocity_due_to_tides",
-            "units": "m s^-1",
-            "_FillValue": fill_value,
-        },
-    )
-    ds = xr.Dataset({"et": ha, "ut": ua, "vt": va})
+    pdb.set_trace()
+
+    ds = make_timeseries_dataset(time, lon, lat, rvars["h"], rvars["u"], rvars["v"])
 
     if outfile:
         ds.to_netcdf(outfile)
@@ -553,6 +523,7 @@ def otisnc2zarr(
     ds = _fix_east(ds)
     ds = _transp2vel(ds)
 
+    # TODO: write case where amplitude parameters need to be written and replace tpxo9 zarr at least
     ds = make_cons_dataset(
         ds.con.values,
         ds.lon_z.values,
@@ -872,7 +843,7 @@ def make_cons_dataset(
     Vp=None,
     attrs={
         "description": "Tidal constituents in OTIS format",
-        "institutuon": "Oceanum Ltd",
+        "institution": "Oceanum Ltd",
     },
 ):
     """ Create xarray.Dataset with tidal constituents consisting of merged OTIS format
@@ -889,29 +860,29 @@ def make_cons_dataset(
 
     Args:
         ----------- Coordinates (required) ---------------------------------------------
-        con (numpy.ndarray, dtype='|S4'): Tidal onstituents
-        lon_z (numpy.ndarray 1D): Lon coordinates at Z-points 
-        lat_z (numpy.ndarray 1D): Lat coordinates at Z-points 
-        lon_u (numpy.ndarray 1D): Lon coordinates at U-points 
-        lat_u (numpy.ndarray 1D): Lat coordinates at U-points 
-        lon_v (numpy.ndarray 1D): Lon coordinates at V-points 
-        lat_v (numpy.ndarray 1D): Lat coordinates at V-points 
+        con (numpy.ndarray, dtype='|S4'): Tidal constituents
+        lon_z (numpy.ndarray 2D): Lon coord array at Z-points 
+        lat_z (numpy.ndarray 2D): Lat coord array at Z-points 
+        lon_u (numpy.ndarray 2D): Lon coord array at U-points 
+        lat_u (numpy.ndarray 2D): Lat coord array at U-points 
+        lon_v (numpy.ndarray 2D): Lon coord array at V-points 
+        lat_v (numpy.ndarray 2D): Lat coord array at V-points 
         ----------- Complex parameters (required) --------------------------------------
-        hRe, hIm (numpy.ma.core.MaskedArray): Complex tidal elevation amplitude
-        uRe, uIm (numpy.ma.core.MaskedArray): Complex tidal U-current amplitude
-        vRe, vIm (numpy.ma.core.MaskedArray): Complex tidal V-current amplitude
-        URe, UIm (numpy.ma.core.MaskedArray): Complex tidal U-transport amplitude
-        VRe, VIm (numpy.ma.core.MaskedArray): Complex tidal V-transport amplitude
+        hRe, hIm (numpy.ma.core.MaskedArray 3D): Complex tidal elevation amplitude
+        uRe, uIm (numpy.ma.core.MaskedArray 3D): Complex tidal U-current amplitude
+        vRe, vIm (numpy.ma.core.MaskedArray 3D): Complex tidal V-current amplitude
+        URe, UIm (numpy.ma.core.MaskedArray 3D): Complex tidal U-transport amplitude
+        VRe, VIm (numpy.ma.core.MaskedArray 3D): Complex tidal V-transport amplitude
         ----------- Miscelania ---------------------------------------------------------
-        hz, hu, hv (numpy.ndarray): Depths at U, V, Z points
-        mz, mu, mv (numpy.ndarray): Landmask at U, V, Z points
+        hz, hu, hv (numpy.ndarray 2D): Depths at U, V, Z points
+        mz, mu, mv (numpy.ndarray 2D): Landmask at U, V, Z points
         attrs (dict): Dataset global attributes dictionary (optional)  
         ----------- Amplitude / Phase parameters (optional) ----------------------------
-        ha, hp   (numpy.ma.core.MaskedArray): Elevation amplitude and phase (optional)
-        ua, up   (numpy.ma.core.MaskedArray): U-current amplitude and phase (optional)
-        va, vp   (numpy.ma.core.MaskedArray): V-current amplitude and phase (optional)
-        Ua, Up   (numpy.ma.core.MaskedArray): U-transport amplitude and phase (optional)
-        Va, Vp   (numpy.ma.core.MaskedArray): V-transport amplitude and phase (optional)
+        ha, hp   (numpy.ma.core.MaskedArray 3D): Elevation amplitude and phase (optional)
+        ua, up   (numpy.ma.core.MaskedArray 3D): U-current amplitude and phase (optional)
+        va, vp   (numpy.ma.core.MaskedArray 3D): V-current amplitude and phase (optional)
+        Ua, Up   (numpy.ma.core.MaskedArray 3D): U-transport amplitude and phase (optional)
+        Va, Vp   (numpy.ma.core.MaskedArray 3D): V-transport amplitude and phase (optional)
         --------------------------------------------------------------------------------
 
     Returns:
@@ -1151,15 +1122,69 @@ def make_cons_dataset(
 
 
 def make_timeseries_dataset(
-    time, lon, lat,
+    time,
+    lon,
+    lat,
+    et,
+    ut,
+    vt,
+    attrs={
+        "description": "Tide elevation and currents prediction time series",
+        "institution": "Oceanum Ltd",
+    },
 ):
-    """ Create xarray.Dataset for gridded tide timeseries based on raw numpy arrays
+    """ Create xarray.Dataset with tidal prediction timeseries.
+
+        It can be used to create netcdf or zarr files
 
     Args:
-        lon :
-        lat :
-        et :
-        ut :
-        vt :
+        time ( 1D): Time coordinate
+        lon (numpy.ndarray 2D): Lon coordinates
+        lat (numpy.ndarray 2D): Lat coordinates 
+        et (numpy.ma.core.MaskedArray 3D): Tidal elevations
+        ut (numpy.ma.core.MaskedArray 3D): Tidal U-current
+        vt (numpy.ma.core.MaskedArray 3D): Tidal V-current
+        attrs (dict): Dataset global attributes dictionary (optional)  
+
+    Returns:
+        ds (xarray.Dataset)
+
+    TODO: perhaps use CDL to create a skeleton Dataset and fill it up?
     """
-    raise NotImplementedError
+    ha = xr.DataArray(
+        dims=("time", "lat", "lon"),
+        coords={"time": time, "lat": lat[:, 0], "lon": lon[0, :]},
+        name="et",
+        data=et,
+        attrs={
+            "standard_name": "tidal_sea_surface_height_above_mean_sea_level",
+            "units": "m",
+            "_FillValue": et.fill_value,
+        },
+    )
+    ua = xr.DataArray(
+        dims=("time", "lat", "lon"),
+        coords={"time": time, "lat": lat[:, 0], "lon": lon[0, :]},
+        name="ut",
+        data=ut,
+        attrs={
+            "standard_name": "eastward_sea_water_velocity_due_to_tides",
+            "units": "m s^-1",
+            "_FillValue": ut.fill_value,
+        },
+    )
+    va = xr.DataArray(
+        dims=("time", "lat", "lon"),
+        coords={"time": time, "lat": lat[:, 0], "lon": lon[0, :]},
+        name="vt",
+        data=vt,
+        attrs={
+            "standard_name": "northward_sea_water_velocity_due_to_tides",
+            "units": "m s^-1",
+            "_FillValue": vt.fill_value,
+        },
+    )
+
+    ds = xr.Dataset({"et": ha, "ut": ua, "vt": va})
+
+    return ds
