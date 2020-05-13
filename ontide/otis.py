@@ -427,27 +427,50 @@ def _fix_east(ds):
 
             Returns:
                 xarray.Dataset
-        """
-    lon = ds.lon_z.values
-    lon[lon > 180] -= 360
-    idx = np.argsort(lon)
-    lon = np.take_along_axis(lon, idx, axis=-1)
+    """
+    idx = {}
+
+    lonz = ds.lon_z.values.copy()
+    lonz[lonz > 180] -= 360
+    idx["z"] = np.argsort(lonz)
+
+    lonu = ds.lon_u.values.copy()
+    lonu[lonu > 180] -= 360
+    idx["u"] = np.argsort(lonu)
+
+    lonv = ds.lon_v.values.copy()
+    lonv[lonv > 180] -= 360
+    idx["v"] = np.argsort(lonv)
 
     print("shifting along x-axis: ")
     for varname, var in ds.data_vars.items():
-        if "ny" in var.dims and "nx" in var.dims and not varname.startswith("lat"):
+        if "ny" in var.dims and "nx" in var.dims:
             print(varname)
             vals = var.values
-            if "lon" in varname:
-                vals[vals > 180] -= 360
-                ds[varname].values = vals
 
             if len(var.dims) > 2:
-                vals = np.take_along_axis(
-                    vals, idx[None, ...].repeat(ds.dims["nc"], axis=0), axis=-1
-                )
+                if "z" in varname or "h" in varname:
+                    vals = np.take_along_axis(
+                        vals, idx["z"][None, ...].repeat(ds.dims["nc"], axis=0), axis=-1
+                    )
+                elif "u" in varname or "U" in varname:
+                    vals = np.take_along_axis(
+                        vals, idx["u"][None, ...].repeat(ds.dims["nc"], axis=0), axis=-1
+                    )
+                elif "v" in varname or "V" in varname:
+                    vals = np.take_along_axis(
+                        vals, idx["v"][None, ...].repeat(ds.dims["nc"], axis=0), axis=-1
+                    )
             else:
-                vals = np.take_along_axis(vals, idx, axis=-1)
+                if "z" in varname or "h" in varname:
+                    vals = np.take_along_axis(vals, idx["z"], axis=-1)
+                elif "u" in varname or "U" in varname:
+                    vals = np.take_along_axis(vals, idx["u"], axis=-1)
+                elif "v" in varname or "V" in varname:
+                    vals = np.take_along_axis(vals, idx["v"], axis=-1)
+
+            if "lon" in varname:
+                vals[vals > 180] -= 360
 
             ds[varname].values = vals
 
@@ -455,28 +478,28 @@ def _fix_east(ds):
 
 
 def _transp2vel(ds):
-        """ Compute complex velocities based on complex transports and append 
+    """ Compute complex velocities based on complex transports and append 
             them to the xr.Dataset
         
         """
-        print("Computing complex velocities based on complex transports")
-        longname = "Tidal WE transport complex ampl., {c} part, at {n}-nodes"
-        variables = dict(uRe=None, uIm=None, vRe=None, vIm=None)
+    print("Computing complex velocities based on complex transports")
+    longname = "Tidal WE transport complex ampl., {c} part, at {n}-nodes"
+    variables = dict(uRe=None, uIm=None, vRe=None, vIm=None)
 
-        for node in ["u", "v"]:
-            for com in ["Re", "Im"]:
-                variables["{}{}".format(node, com)] = xr.Variable(
-                    ds["{}{}".format(node.upper(), com)].dims,
-                    ds["{}{}".format(node.upper(), com)].values
-                    / ds["h{}".format(node)].values,
-                    attrs=dict(
-                        long_name=longname.format(c=com, n=node.upper()),
-                        units="meter/s",
-                    ),
-                )
+    for node in ["u", "v"]:
+        for com in ["Re", "Im"]:
+            variables["{}{}".format(node, com)] = xr.Variable(
+                ds["{}{}".format(node.upper(), com)].dims,
+                ds["{}{}".format(node.upper(), com)].values
+                / ds["h{}".format(node)].values,
+                attrs=dict(
+                    long_name=longname.format(c=com, n=node.upper()), units="meter/s",
+                ),
+            )
 
-        ds = ds.assign(variables=variables)
-        return ds
+    ds = ds.assign(variables=variables)
+    return ds
+
 
 def otisnc2zarr(
     model="file:///data/tide/otis_netcdf/Model_tpxo9",
@@ -501,9 +524,15 @@ def otisnc2zarr(
 
     with open(modelfile) as f:
         lines = f.readlines()
-        elevfile = os.path.join(os.path.dirname(modelfile), lines[0].split("/")[-1]).strip()
-        curfile = os.path.join(os.path.dirname(modelfile), lines[1].split("/")[-1]).strip()
-        gfile = os.path.join(os.path.dirname(modelfile), lines[2].split("/")[-1]).strip()
+        elevfile = os.path.join(
+            os.path.dirname(modelfile), lines[0].split("/")[-1]
+        ).strip()
+        curfile = os.path.join(
+            os.path.dirname(modelfile), lines[1].split("/")[-1]
+        ).strip()
+        gfile = os.path.join(
+            os.path.dirname(modelfile), lines[2].split("/")[-1]
+        ).strip()
 
     dsg = xr.open_dataset(gfile)
     dsh = xr.open_dataset(elevfile)
@@ -515,6 +544,7 @@ def otisnc2zarr(
     ).transpose("ny", "nx")
     dsu = dsu.drop(["lon_u", "lat_u", "lon_v", "lat_v"]).transpose("nc", "ny", "nx")
     dsh = dsh.drop(["lat_z", "lon_z"]).transpose("nc", "ny", "nx")
+
     if drop_amp_params:
         dsh = dsh.drop(["ha", "hp"])
         dsu = dsu.drop(["Ua", "ua", "up", "Va", "va", "vp"])
@@ -522,7 +552,7 @@ def otisnc2zarr(
     ds = xr.merge([dsg, dsh, dsu])
     ds = _fix_east(ds)
     ds = _transp2vel(ds)
-    
+
     ds = make_cons_dataset(
         ds.con.values,
         ds.lon_z.values,
@@ -548,7 +578,9 @@ def otisnc2zarr(
         ds.mu.values,
         ds.mv.values,
     )
-    ds.to_zarr("/tmp", os.path.basename(outfile), consolidated=True)
+    ds.to_zarr(
+        os.path.join("/tmp", os.path.basename(outfile)), consolidated=True, mode="w"
+    )
     # TODO write bucket copy
 
 
