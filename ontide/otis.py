@@ -183,6 +183,75 @@ class NCOtis(object):
                     )
 
 
+def predict_tide_point(
+    lon,
+    lat,
+    time,
+    model="tpxo9",
+    catalog=ONTAKE_CATALOG,
+    namespace=ONTAKE_NAMESPACE,
+    conlist=None,
+    outfile=None,
+):
+    """ Performs a tidal prediction at [lon,lat] for [time].
+
+	Args:
+	
+	lon, lat (float):  Lat ranges from -90 to 90. Lon can range from -180 to 360.
+  	time:              Array of times.  Acceptable formats are 
+                           a list of `datetime` objects, a list or array of 
+                           `np.datetime64` objects, or pandas date_range
+    model (str):       Intake dataset of the regional OTIS model. 
+                           TIP: use ontake to discover datasets:
+                              ot = Ontake(namespace='tide', 
+                                          master_url='gs://oceanum-catalog/oceanum.yml')
+                              ot.datasets
+    catalog (str):            Intake catalog that has the source constituents dataset
+    namespace (str):          Intake namespace
+	conlist :                 List of strings (optional). If supplied, gives a list 
+                                of tidal constituents to include in prediction. If not supplied, 
+                                default from model source will be used.
+                                Available are 'M2', 'S2', 'N2', 'K2', 'K1', 'O1', 'P1', 'Q1'
+    outfile:                  Writes pandas.DataFrame to disk as a NetCDF file
+
+	Returns
+	pandas.DataFrame containing:
+	    et : tidal heights is in [m]
+	    ut : eastward tidal velocity [m/s]
+	    vt : northward tidal velocity [m/s]
+
+	Examples
+	--------
+
+	dates = np.arange(np.datetime64('2001-04-03'),
+	                  np.datetime64('2001-05-03'), dtype='datetime64[h]' )
+
+	lon = 170
+	lat = -30
+
+	df = predict_tide_point(lon, lat, dates)
+	"""
+    xi = np.linspace(lon - 0.01, lon + 0.01, 5)
+    yi = np.linspace(lat - 0.01, lat + 0.01, 5)
+    xg, yg = np.meshgrid(xi, yi)
+    ds = predict_tide_grid(
+        xg,
+        yg,
+        time,
+        model=model,
+        catalog=catalog,
+        namespace=namespace,
+        conlist=conlist,
+        outfile=outfile,
+    )
+    df = ds.sel(lon=lon, lat=lat, method='nearest', drop=True).to_dataframe()
+
+    if outfile:
+        ds.sel(lon=lon, lat=lat, method='nearest').to_netcdf(outfile)
+
+    return df
+
+
 def predict_tide_grid(
     lon,
     lat,
@@ -211,7 +280,8 @@ def predict_tide_grid(
     catalog (str):            Intake catalog that has the source constituents dataset
     namespace (str):          Intake namespace
 	conlist :                 List of strings (optional). If supplied, gives a list 
-                                of tidal constituents to include in prediction. 
+                                of tidal constituents to include in prediction. If not supplied, 
+                                default from model source will be used.
                                 Available are 'M2', 'S2', 'N2', 'K2', 'K1', 'O1', 'P1', 'Q1'
     outfile:                  Writes xarray.Dataset to disk as a NetCDF file
 
@@ -228,10 +298,10 @@ def predict_tide_grid(
 	dates = np.arange(np.datetime64('2001-04-03'),
 	                  np.datetime64('2001-05-03'), dtype='datetime64[h]' )
 
-	lon = np.array([198, 199])
-	lat = np.array([21, 19])
+	lon = np.array([168, 179])
+	lat = np.array([11, 19])
 
-	ds = predict_tide_grid(lon, lat, time) 
+	ds = predict_tide_grid(lon, lat, dates) 
 	"""
 
     otis = NCOtis(
@@ -275,14 +345,12 @@ def predict_tide_grid(
     print("Converting complex harmonics into timeseries")
     # TODO: this is very inneficient for medium to large grids, need to optimize somehow
     for k, om in enumerate(omega):
-        print(f'    constituent {k+1} | {len(omega)}')
+        print(f"    constituent {k+1} | {len(omega)}")
         for idx in range(nj * ni):
             for p in ["h", "u", "v"]:
                 rvars[p][:, idx] += pf[k] * cvars[f"{p}Re"][k, idx] * np.cos(
                     om * tsec + v0u[k] + pu[k]
-                ) - pf[k] * cvars[f"{p}Im"][k, idx] * np.sin(
-                    om * tsec + v0u[k] + pu[k]
-                )
+                ) - pf[k] * cvars[f"{p}Im"][k, idx] * np.sin(om * tsec + v0u[k] + pu[k])
 
     for varname, var in rvars.items():
         rvars[varname] = var.reshape((nt, nj, ni))
@@ -418,7 +486,9 @@ def _transp2vel(ds):
             variables[f"{node}{com}"] = xr.Variable(
                 ds[f"{node.upper()}{com}"].dims,
                 ds[f"{node.upper()}{com}"].values
-                / (ds[f"h{node}"].values + ds[f"h{node}"].values * 0 + 1e-5), # avoiding zero-division
+                / (
+                    ds[f"h{node}"].values + ds[f"h{node}"].values * 0 + 1e-5
+                ),  # avoiding zero-division
                 attrs=dict(
                     long_name=longname.format(c=com, n=node.upper()), units="meter/s",
                 ),
