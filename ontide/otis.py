@@ -415,10 +415,10 @@ def _transp2vel(ds):
 
     for node in ["u", "v"]:
         for com in ["Re", "Im"]:
-            variables["{node}{con}"] = xr.Variable(
-                ds["{node.upper()}{con}"].dims,
-                ds["{node.upper()}{con}"].values
-                / ds["h{node}"].values,
+            variables[f"{node}{com}"] = xr.Variable(
+                ds[f"{node.upper()}{com}"].dims,
+                ds[f"{node.upper()}{com}"].values
+                / (ds[f"h{node}"].values + ds[f"h{node}"].values * 0 + 1e-5), # avoiding zero-division
                 attrs=dict(
                     long_name=longname.format(c=com, n=node.upper()), units="meter/s",
                 ),
