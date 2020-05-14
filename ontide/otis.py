@@ -83,7 +83,7 @@ class NCOtis(object):
             self.ds.lat_z.values.max(),
             self.was_subsetted,
         )
-        _repr += "\n{}".format(self.cons)
+        _repr += f"\n{self.cons}"
         return _repr
 
     def _fix_topo(self):
@@ -275,12 +275,12 @@ def predict_tide_grid(
     print("Converting complex harmonics into timeseries")
     # TODO: this is very inneficient for medium to large grids, need to optimize somehow
     for k, om in enumerate(omega):
-        print(f'    cons {k+1} | {len(omega)}')
+        print(f'    constituent {k+1} | {len(omega)}')
         for idx in range(nj * ni):
             for p in ["h", "u", "v"]:
-                rvars[p][:, idx] += pf[k] * cvars["{}Re".format(p)][k, idx] * np.cos(
+                rvars[p][:, idx] += pf[k] * cvars[f"{p}Re"][k, idx] * np.cos(
                     om * tsec + v0u[k] + pu[k]
-                ) - pf[k] * cvars["{}Im".format(p)][k, idx] * np.sin(
+                ) - pf[k] * cvars[f"{p}Im"][k, idx] * np.sin(
                     om * tsec + v0u[k] + pu[k]
                 )
 
@@ -415,10 +415,10 @@ def _transp2vel(ds):
 
     for node in ["u", "v"]:
         for com in ["Re", "Im"]:
-            variables["{}{}".format(node, com)] = xr.Variable(
-                ds["{}{}".format(node.upper(), com)].dims,
-                ds["{}{}".format(node.upper(), com)].values
-                / ds["h{}".format(node)].values,
+            variables["{node}{con}"] = xr.Variable(
+                ds["{node.upper()}{con}"].dims,
+                ds["{node.upper()}{con}"].values
+                / ds["h{node}"].values,
                 attrs=dict(
                     long_name=longname.format(c=com, n=node.upper()), units="meter/s",
                 ),
