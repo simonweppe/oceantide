@@ -8,6 +8,7 @@ import numpy as np
 import numpy.ma as ma
 from scipy import interpolate
 import netCDF4
+import pandas as pd
 import xarray as xr
 import pyroms
 from fsspec import filesystem, get_mapper
@@ -222,26 +223,68 @@ def predict_tide_point(
 	time = pd.date_range('2001-1-1', '2001-1-7 23:00', freq="H")
 	lon = 170
 	lat = -30
-
-	df = predict_tide_point(lon, lat, time)
+	df = predict_tide_point(170, -30, time)
 	"""
-    xi = np.linspace(lon - 0.01, lon + 0.01, 5)
-    yi = np.linspace(lat - 0.01, lat + 0.01, 5)
-    xg, yg = np.meshgrid(xi, yi)
-    ds = predict_tide_grid(
-        xg,
-        yg,
-        time,
-        model=model,
+    otis = NCOtis(
+        model,
+        x0=lon - 1,
+        x1=lon + 1,
+        y0=lat - 1,
+        y1=lat + 1,
         catalog=catalog,
         namespace=namespace,
-        conlist=conlist,
-        outfile=outfile,
     )
-    df = ds.sel(lon=lon, lat=lat, method='nearest', drop=True).to_dataframe()
+    conlist = conlist or otis.cons
+    omega = [OMEGA[c] for c in conlist]
+
+    # Nodal correction: nodal needs days since 1992:
+    days = (time[0] - np.datetime64("1992-01-01", "D")).days
+    pu, pf, v0u = nodal(
+        days + 48622.0, conlist
+    )  # not sure where 48622.0 comes from ???
+
+    # extracting nearest point
+    df = otis.ds.sel(
+        lon_z=lon,
+        lat_z=lat,
+        lon_u=lon,
+        lat_u=lat,
+        lon_v=lon,
+        lat_v=lat,
+        method="nearest",
+        drop=True,
+    ).to_dataframe()
+
+    # Calculate the time series
+    tsec = np.array((time - np.datetime64("1992-01-01", "s")).total_seconds())
+    nt = time.size
+    nc = len(conlist)
+
+    rvars = dict()
+    for var in ["h", "u", "v"]:
+        rvars[var] = np.zeros((nt))
+
+    print("Converting complex harmonics into timeseries")
+    for k, om in enumerate(omega):
+        for p in ["h", "u", "v"]:
+            rvars[p] += pf[k] * df[f"{p}Re"][k] * np.cos(
+                om * tsec + v0u[k] + pu[k]
+            ) - pf[k] * df[f"{p}Im"][k] * np.sin(om * tsec + v0u[k] + pu[k])
+
+    df = pd.DataFrame(
+        {"et": rvars["h"], "ut": rvars["u"], "vt": rvars["v"]}, index=time
+    )
+    df.index.rename("time", inplace=True)
+
+    if df.dropna().empty:
+        raise Exception(
+            "No valid data found, please check if coordinates are in landmask"
+        )
 
     if outfile:
-        ds.sel(lon=lon, lat=lat, method='nearest').to_netcdf(outfile)
+        ds = xr.Dataset.from_dataframe(df)
+        ds.attrs = {"longitude": lon, "latitude": lat}
+        ds.to_netcdf(outfile)
 
     return df
 
@@ -263,8 +306,7 @@ def predict_tide_grid(
 	lon, lat (numpy ndarray): Each is an n-length array of longitude 
                                 and latitudes in degrees to perform predictions at.
                                 Lat ranges from -90 to 90. Lon can range from -180 to 360.
-  	time: m-length array of times.  Acceptable formats are a list of `datetime` objects, 
-            a list or array of `np.datetime64` objects, or pandas date_range
+  	time: Array of datetime objects or equivalents such pandas.data_range, etc.
     model (str): Intake dataset of the regional OTIS model. TIP: use ontake to discover datasets:
                     ot = Ontake(namespace='tide', master_url='gs://oceanum-catalog/oceanum.yml')
                     ot.datasets
@@ -286,10 +328,8 @@ def predict_tide_grid(
 	--------
 
 	time = pd.date_range('2001-1-1', '2001-1-7 23:00', freq="H")
-
 	lon = np.array([168, 179])
 	lat = np.array([11, 19])
-
 	ds = predict_tide_grid(lon, lat, dates) 
 	"""
 
