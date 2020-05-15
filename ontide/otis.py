@@ -178,9 +178,9 @@ class NCOtis(object):
                         dry[:, 0] = idxnan[0] + 1
                         dry[:, 1] = idxnan[1] + 1
 
-                    var.values[k, ...] = pyroms._remapping.flood(
-                        var.values[k, ...], wet, dry, lon, lat, dmax,
-                    )
+                        var.values[k, ...] = pyroms._remapping.flood(
+                            var.values[k, ...], wet, dry, lon, lat, dmax,
+                        )
 
 
 def predict_tide_point(
@@ -198,21 +198,17 @@ def predict_tide_point(
 	Args:
 	
 	lon, lat (float):  Lat ranges from -90 to 90. Lon can range from -180 to 360.
-  	time:              Array of times.  Acceptable formats are 
-                           a list of `datetime` objects, a list or array of 
-                           `np.datetime64` objects, or pandas date_range
-    model (str):       Intake dataset of the regional OTIS model. 
-                           TIP: use ontake to discover datasets:
-                              ot = Ontake(namespace='tide', 
-                                          master_url='gs://oceanum-catalog/oceanum.yml')
-                              ot.datasets
-    catalog (str):            Intake catalog that has the source constituents dataset
-    namespace (str):          Intake namespace
-	conlist :                 List of strings (optional). If supplied, gives a list 
-                                of tidal constituents to include in prediction. If not supplied, 
-                                default from model source will be used.
-                                Available are 'M2', 'S2', 'N2', 'K2', 'K1', 'O1', 'P1', 'Q1'
-    outfile:                  Writes pandas.DataFrame to disk as a NetCDF file
+  	time: Array of datetime objects or equivalents such pandas.data_range, etc.
+    model (str): Intake dataset of the regional OTIS model. TIP: use ontake to discover datasets:
+                     ot = Ontake(namespace='tide', master_url='gs://oceanum-catalog/oceanum.yml')
+                     ot.datasets
+    catalog (str): Intake catalog that has the source constituents dataset
+    namespace (str): Intake namespace
+	conlist : List of strings (optional). If supplied, gives a list 
+                  of tidal constituents to include in prediction. If not supplied, 
+                  default from model source will be used.
+                  Available are 'M2', 'S2', 'N2', 'K2', 'K1', 'O1', 'P1', 'Q1'
+    outfile: Writes pandas.DataFrame to disk as a NetCDF file
 
 	Returns
 	pandas.DataFrame containing:
@@ -223,13 +219,11 @@ def predict_tide_point(
 	Examples
 	--------
 
-	dates = np.arange(np.datetime64('2001-04-03'),
-	                  np.datetime64('2001-05-03'), dtype='datetime64[h]' )
-
+	time = pd.date_range('2001-1-1', '2001-1-7 23:00', freq="H")
 	lon = 170
 	lat = -30
 
-	df = predict_tide_point(lon, lat, dates)
+	df = predict_tide_point(lon, lat, time)
 	"""
     xi = np.linspace(lon - 0.01, lon + 0.01, 5)
     yi = np.linspace(lat - 0.01, lat + 0.01, 5)
@@ -269,34 +263,29 @@ def predict_tide_grid(
 	lon, lat (numpy ndarray): Each is an n-length array of longitude 
                                 and latitudes in degrees to perform predictions at.
                                 Lat ranges from -90 to 90. Lon can range from -180 to 360.
-  	time:                     m-length array of times.  Acceptable formats are 
-                                a list of `datetime` objects, a list or array of 
-                                `np.datetime64` objects, or pandas date_range
-    model (str):              Intake dataset of the regional OTIS model. 
-                                TIP: use ontake to discover datasets:
-                                    ot = Ontake(namespace='tide', 
-                                                master_url='gs://oceanum-catalog/oceanum.yml')
-                                    ot.datasets
-    catalog (str):            Intake catalog that has the source constituents dataset
-    namespace (str):          Intake namespace
-	conlist :                 List of strings (optional). If supplied, gives a list 
-                                of tidal constituents to include in prediction. If not supplied, 
-                                default from model source will be used.
-                                Available are 'M2', 'S2', 'N2', 'K2', 'K1', 'O1', 'P1', 'Q1'
-    outfile:                  Writes xarray.Dataset to disk as a NetCDF file
+  	time: m-length array of times.  Acceptable formats are a list of `datetime` objects, 
+            a list or array of `np.datetime64` objects, or pandas date_range
+    model (str): Intake dataset of the regional OTIS model. TIP: use ontake to discover datasets:
+                    ot = Ontake(namespace='tide', master_url='gs://oceanum-catalog/oceanum.yml')
+                    ot.datasets
+    catalog (str): Intake catalog that has the source constituents dataset
+    namespace (str): Intake namespace
+	conlist : List of strings (optional). If supplied, gives a list 
+                  of tidal constituents to include in prediction. If not supplied, 
+                  default from model source will be used.
+                  Available are 'M2', 'S2', 'N2', 'K2', 'K1', 'O1', 'P1', 'Q1'
+    outfile: Writes xarray.Dataset to disk as a NetCDF file
 
 	Returns
 	xarray.Dataset containing:
-	    et : 3D numpy array of tidal heights
-		     height is in meters
+	    et : 3D numpy array of tidal heights [m]
 	    ut : 3D numpy array of eastward tidal velocity [m/s]
 	    vt : 3D numpy array of northward tidal velocity [m/s]
 
 	Examples
 	--------
 
-	dates = np.arange(np.datetime64('2001-04-03'),
-	                  np.datetime64('2001-05-03'), dtype='datetime64[h]' )
+	time = pd.date_range('2001-1-1', '2001-1-7 23:00', freq="H")
 
 	lon = np.array([168, 179])
 	lat = np.array([11, 19])
