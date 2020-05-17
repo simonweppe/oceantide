@@ -529,7 +529,7 @@ def _transp2vel(ds):
 
 def otisnc2zarr(
     model="file:///data/tide/otis_netcdf/Model_tpxo9",
-    outfile="gs://oceanum-tide/otis/DATA_zarr/tpxo9.zarr",
+    outfile="/tmp/tpxo9.zarr",
     drop_amp_params=False,
 ):
     # TODO: write retrieval from bucket
