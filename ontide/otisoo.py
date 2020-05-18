@@ -8,10 +8,11 @@ import os, shutil, glob, logging
 import numpy as np
 from google.cloud import storage, bigquery
 from ondata.download.bathy import get_bathy
+
+from ontide.settings import *
 from ontide.otis import otisbin2xr
 
 
-BUCKET = "oceanum-tide"
 ROOTDIR = os.path.join(os.path.dirname(__file__), "../otisoo")
 RUNDIR = "/tmp/otisoo"
 DIRTREE = ["exe", "dat", "prm", "repx1", "out", "bathy"]
