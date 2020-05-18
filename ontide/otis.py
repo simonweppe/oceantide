@@ -10,19 +10,18 @@ from scipy import interpolate
 import netCDF4
 import pandas as pd
 import xarray as xr
-import pyroms
+try:
+    import pyroms
+except ModuleNotFoundError:
+    logging.warning("pyroms may not installed correctly")
+
 from fsspec import filesystem, get_mapper
 
 from ontake.ontake import Ontake
 
+from .settings import *
 from .core import nodal, astrol
 from .constituents import OMEGA
-
-
-OTIS_VERSION = "9"
-COMPLEX_VARS = ["hRe", "hIm", "uRe", "uIm", "vRe", "vIm"]
-ONTAKE_CATALOG = "gs://oceanum-catalog/oceanum.yml"
-ONTAKE_NAMESPACE = "tide"
 
 
 class NCOtis(object):
@@ -198,7 +197,7 @@ def predict_tide_point(
 
 	Args:
 	
-	lon, lat (float):  Lat ranges from -90 to 90. Lon can range from -180 to 360.
+	lon, lat (float):  Lat ranges from -90 to 90. Lon can range from -180 to 180.
   	time: Array of datetime objects or equivalents such pandas.data_range, etc.
     model (str): Intake dataset of the regional OTIS model. TIP: use ontake to discover datasets:
                      ot = Ontake(namespace='tide', master_url='gs://oceanum-catalog/oceanum.yml')
