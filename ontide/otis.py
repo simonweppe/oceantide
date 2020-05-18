@@ -305,7 +305,7 @@ def predict_tide_grid(
 	
 	lon, lat (numpy ndarray): Each is an n-length array of longitude 
                                 and latitudes in degrees to perform predictions at.
-                                Lat ranges from -90 to 90. Lon can range from -180 to 360.
+                                Lat ranges from -90 to 90. Lon can range from -180 to 180.
   	time: Array of datetime objects or equivalents such pandas.data_range, etc.
     model (str): Intake dataset of the regional OTIS model. TIP: use ontake to discover datasets:
                     ot = Ontake(namespace='tide', master_url='gs://oceanum-catalog/oceanum.yml')
