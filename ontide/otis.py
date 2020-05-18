@@ -802,7 +802,7 @@ def otisbin2xr(gfile, hfile, uvfile, dmin=1.0, outfile=None):
     uRe, uIm, vRe, vIm = [], [], [], []
 
     for ic in range(len(con)):
-        uRe.append(URe[ic, ...] / hz)
+        uRe.append(URe[ic, ...] / hz) # avoid zero division
         vRe.append(VRe[ic, ...] / hz)
         uIm.append(UIm[ic, ...] / hz)
         vIm.append(VIm[ic, ...] / hz)
