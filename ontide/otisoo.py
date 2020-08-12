@@ -103,8 +103,6 @@ class OTISoo(object):
             ds = ds.rolling(lon=self.smooth_fac, center=True).mean()
             ds = ds.rolling(lat=self.smooth_fac, center=True).mean()
 
-        # from IPython import embed; embed()
-
         x, y = np.meshgrid(ds.lon.values, ds.lat.values)
         h = ds.depth.values
         h[np.isnan(h) == 1] = -9  # so the inverse model knows where the mask is
@@ -131,7 +129,7 @@ class OTISoo(object):
             )
 
         os.chdir(os.path.join(self.localdir, "exe"))
-        os.system("./mk_grid -l../bathy/bathy.dat")
+        os.system(f"./mk_grid -l../bathy/bathy.dat -h{self.hmin}")
         os.system(f"./ob_eval -M{self.bnd}")
         os.system(f"./Fwd_fac")
 
