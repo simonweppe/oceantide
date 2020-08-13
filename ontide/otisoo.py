@@ -133,7 +133,7 @@ class OTISoo(object):
         os.system(f"./ob_eval -M{self.bnd}")
         os.system(f"./Fwd_fac")
 
-        logging.info("Writting to {self.outfile}")
+        logging.info(f"Writting to {self.outfile}")
         ds = otisbin2xr(
             os.path.join(self.localdir, "prm/grid"),
             os.path.join(self.localdir, "out/h0.df.out"),
