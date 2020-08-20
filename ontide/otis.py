@@ -342,7 +342,7 @@ def predict_tide_grid(
         namespace=namespace,
     )
     print("Flooding land to avoid interpolation noise")
-    otis.flood()
+    # otis.flood()
     conlist = conlist or otis.cons
     omega = [OMEGA[c] for c in conlist]
 
