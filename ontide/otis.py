@@ -46,7 +46,7 @@ class NCOtis(object):
 
     def __init__(
         self,
-        model="tpxo9",
+        model="tpxo9_tide_glob_cons",
         drop_amp_params=True,
         x0=None,
         x1=None,
@@ -187,7 +187,7 @@ def predict_tide_point(
     lon,
     lat,
     time,
-    model="tpxo9",
+    model="tpxo9_tide_glob_cons",
     catalog=ONTAKE_CATALOG,
     namespace=ONTAKE_NAMESPACE,
     conlist=None,
@@ -292,7 +292,7 @@ def predict_tide_grid(
     lon,
     lat,
     time,
-    model="tpxo9",
+    model="tpxo9_tide_glob_cons",
     catalog=ONTAKE_CATALOG,
     namespace=ONTAKE_NAMESPACE,
     conlist=None,
