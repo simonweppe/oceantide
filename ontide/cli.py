@@ -18,7 +18,7 @@ def main():
 
 
 @main.group()
-@click.option("--model", default="tpxo9", help="ID of the gridded constituends model dataset", show_default=True)
+@click.option("--model", default="tpxo9_tide_glob_cons", help="ID of the gridded constituends model dataset", show_default=True)
 @click.option("--catalog", default=ONTAKE_CATALOG, help="Intake catalog that has the source constituents dataset", show_default=True)
 @click.option("--namespace", default=ONTAKE_NAMESPACE, help="Intake namespace", show_default=True)
 @click.option("--conlist", default=None, show_default=True,
