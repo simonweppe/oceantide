@@ -5,7 +5,6 @@
 import numpy as np
 import datetime as dt
 import netCDF4 as netCDF
-import pyroms
 
 
 def make_remap_grid_file(Cgrd, Cpos="z"):

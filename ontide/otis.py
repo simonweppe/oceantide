@@ -10,10 +10,6 @@ from scipy import interpolate
 import netCDF4
 import pandas as pd
 import xarray as xr
-try:
-    import pyroms
-except ModuleNotFoundError:
-    logging.warning("pyroms may not installed correctly")
 
 from fsspec import filesystem, get_mapper
 
