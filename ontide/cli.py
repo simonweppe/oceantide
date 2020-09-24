@@ -111,7 +111,7 @@ def grid(ctx, x0, x1, y0, y1, dx, dy, start_time, end_time, outfile):
 @click.option("-dx", "--dx", default=None, help="Resolution in X-direction", show_default=True, required=True)
 @click.option("-dy", "--dy", default=None, help="Resolution in Y-direction", show_default=True, required=True)
 @click.option("-h", "--bathy", default="gebco_2019", show_default=True)
-@click.option("-s", "--smooth_fac", default=None, show_default=True, "Bathy smooth factor (default None --> no smoothing)")
+@click.option("-s", "--smooth_fac", default=None, show_default=True, help="Bathy smooth factor (default None --> no smoothing)")
 @click.option("-l", "--hmin", default=2, show_default=True)
 @click.option("-b", "--bnd", default="/data/tide/otis_binary/h_tpxo9", show_default=True)
 @click.option("-o", "--outfile", default=None, show_default=True, required=True)
