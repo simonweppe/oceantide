@@ -137,49 +137,7 @@ class NCcons(object):
         )
         print(self.__repr__())
 
-    def flood(self, dmax=1):
-        """
-        Flood variables into land to avoid spurious values close to the coast
-
-        Args:
-            dmax (int>0):            Maximum horizontal flooding distance
-
-        """
-        for varname, var in self.ds.data_vars.items():
-            if len(var.dims) < 3:
-                continue
-            else:
-                var3d = varname
-                break
-
-        msk = np.isnan(self.ds[var3d].values[0, ...])
-
-        for k in range(self.ds.dims["con"]):
-            for varname, var in self.ds.data_vars.items():
-                if len(var.dims) > 2:  # leaving depths and masks out
-                    for key, coord in var.coords.items():
-                        if "lon" in key:
-                            lon = coord.values
-                        if "lat" in key:
-                            lat = coord.values
-
-                    lon, lat = np.meshgrid(lon, lat)
-                    msk = np.isnan(var.values[k, ...])
-                    idxnan = np.where(msk == True)
-                    idx = np.where(msk == False)
-
-                    if list(idx[0]):
-                        wet = np.zeros((len(idx[0]), 2))
-                        dry = np.zeros((len(idxnan[0]), 2))
-                        wet[:, 0] = idx[0] + 1
-                        wet[:, 1] = idx[1] + 1
-                        dry[:, 0] = idxnan[0] + 1
-                        dry[:, 1] = idxnan[1] + 1
-
-                        var.values[k, ...] = pyroms._remapping.flood(
-                            var.values[k, ...], wet, dry, lon, lat, dmax,
-                        )
-
+    
 
 def predict_tide_point(
     lon,
@@ -437,91 +395,6 @@ def _interp(arr, x, y, x2, y2):
     arr[np.isnan(arr) == 1] = 0
     spl = interpolate.RectBivariateSpline(x, y, arr.T)
     return spl(x2, y2, grid=False)
-
-
-def _fix_east(ds):
-    """ Convert 0 < lon < 360 to -180 < lon < 180 and shift all vars accordingly. 
-            IMPORTANT: this is peculiar to OTIS format file provided by their servers.
-                       It is not meant to work generically with any xarray.Dataset
-            Args:
-                ds (xarray.Dataset) :: Input xarray dataset
-
-            Returns:
-                xarray.Dataset
-    """
-    idx = {}
-
-    lonz = ds.lon_z.values.copy()
-    lonz[lonz > 180] -= 360
-    idx["z"] = np.argsort(lonz)
-
-    lonu = ds.lon_u.values.copy()
-    lonu[lonu > 180] -= 360
-    idx["u"] = np.argsort(lonu)
-
-    lonv = ds.lon_v.values.copy()
-    lonv[lonv > 180] -= 360
-    idx["v"] = np.argsort(lonv)
-
-    print("shifting along x-axis: ")
-    for varname, var in ds.data_vars.items():
-        if "ny" in var.dims and "nx" in var.dims:
-            print(varname)
-            vals = var.values
-
-            if len(var.dims) > 2:
-                if "z" in varname or "h" in varname:
-                    vals = np.take_along_axis(
-                        vals, idx["z"][None, ...].repeat(ds.dims["nc"], axis=0), axis=-1
-                    )
-                elif "u" in varname or "U" in varname:
-                    vals = np.take_along_axis(
-                        vals, idx["u"][None, ...].repeat(ds.dims["nc"], axis=0), axis=-1
-                    )
-                elif "v" in varname or "V" in varname:
-                    vals = np.take_along_axis(
-                        vals, idx["v"][None, ...].repeat(ds.dims["nc"], axis=0), axis=-1
-                    )
-            else:
-                if "z" in varname or "h" in varname:
-                    vals = np.take_along_axis(vals, idx["z"], axis=-1)
-                elif "u" in varname or "U" in varname:
-                    vals = np.take_along_axis(vals, idx["u"], axis=-1)
-                elif "v" in varname or "V" in varname:
-                    vals = np.take_along_axis(vals, idx["v"], axis=-1)
-
-            if "lon" in varname:
-                vals[vals > 180] -= 360
-
-            ds[varname].values = vals
-
-    return ds
-
-
-def _transp2vel(ds):
-    """ Compute complex velocities based on complex transports and append 
-            them to the xr.Dataset
-        
-        """
-    print("Computing complex velocities based on complex transports")
-    longname = "Tidal WE transport complex ampl., {c} part, at {n}-nodes"
-    variables = dict(uRe=None, uIm=None, vRe=None, vIm=None)
-
-    for node in ["u", "v"]:
-        for com in ["Re", "Im"]:
-            variables[f"{node}{com}"] = xr.Variable(
-                ds[f"{node.upper()}{com}"].dims,
-                ds[f"{node.upper()}{com}"].values
-                / (
-                    ds[f"h{node}"].values + ds[f"h{node}"].values * 0 + 1e-5
-                ),  # avoiding zero-division
-                attrs=dict(
-                    long_name=longname.format(c=com, n=node.upper()), units="meter/s",
-                ),
-            )
-
-    ds = ds.assign(variables=variables)
-    return ds
 
 
 def make_timeseries_dataset(
