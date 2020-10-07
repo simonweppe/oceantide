@@ -8,8 +8,7 @@ import numpy as np
 import pandas as pd
 
 from ontide.settings import *
-from ontide.otis import predict_tide_point, predict_tide_grid
-from ontide.otisoo import OTISoo
+from ontide.predict import predict_tide_point, predict_tide_grid
 
 
 @click.group()
@@ -100,48 +99,6 @@ def grid(ctx, x0, x1, y0, y1, dx, dy, start_time, end_time, outfile):
         outfile=outfile,
         conlist=ctx.obj["conlist"]
     )
-
-
-@main.command()
-@click.option("-m", "--model", default=None, help="ID of the gridded constituends model dataset to be created", show_default=True, required=True)
-@click.option("-x0", "--x0", default=None, help="Lower left corner lon", show_default=True, required=True)
-@click.option("-x1", "--x1", default=None, help="Upper right corner lon", show_default=True, required=True)
-@click.option("-y0", "--y0", default=None, help="Lower left corner lat", show_default=True, required=True)
-@click.option("-y1", "--y1", default=None, help="Upper right corner lat", show_default=True, required=True)
-@click.option("-dx", "--dx", default=None, help="Resolution in X-direction", show_default=True, required=True)
-@click.option("-dy", "--dy", default=None, help="Resolution in Y-direction", show_default=True, required=True)
-@click.option("-h", "--bathy", default="gebco_2019", show_default=True)
-@click.option("-s", "--smooth_fac", default=None, show_default=True, help="Bathy smooth factor (default None --> no smoothing)")
-@click.option("-l", "--hmin", default=2, show_default=True)
-@click.option("-b", "--bnd", default="/data/tide/otis_binary/h_tpxo9", show_default=True)
-@click.option("-o", "--outfile", default=None, show_default=True, required=True)
-def downscale(model, x0, x1, y0, y1, dx, dy, bathy, smooth_fac, hmin, bnd, outfile):
-    """ Run OTISoo to produced downscaled constituents grid.
-    """
-    click.echo(f"Bathy source: {bathy}")
-    click.echo(f"Minimum depth: {hmin}")
-    click.echo(f"Boundary source: {bnd}")
-    click.echo(f"Output file: {outfile}")
-
-    if smooth_fac != None: smooth_fac = float(smooth_fac)
-    if hmin != None: hmin = float(hmin)
-
-    otisoo = OTISoo(
-        model,
-        float(x0),
-        float(x1),
-        float(y0),
-        float(y1),
-        dx=float(dx),
-        dy=float(dy),
-        bnd=bnd,
-        bathy=bathy, 
-        hmin=hmin,
-        smooth_fac=smooth_fac,
-        outfile=outfile,
-    )
-
-    otisoo.run()
 
 
 
