@@ -40,7 +40,7 @@ def predict(ctx, model, catalog, namespace, conlist):
     ctx.obj["conlist"] = conlist
     click.echo(f"Constituents model ID: {model}")
     click.echo(f"Intake catalog: {catalog}")
-    click.echo(f"Instake namespace: {namespace}")
+    click.echo(f"Intake namespace: {namespace}")
 
     if conlist != None:
         click.echo(f"Selected constituents: {conlist}")

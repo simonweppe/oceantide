@@ -241,9 +241,12 @@ def predict_tide_point(
         )
 
     if outfile:
+        print(f"Output written to {outfile}")
         ds = xr.Dataset.from_dataframe(df)
         ds.attrs = {"longitude": lon, "latitude": lat}
         ds.to_netcdf(outfile)
+    else:
+        print(f"Output written to memory, use <output> kwarg if a file output is desired")
 
     return df
 
