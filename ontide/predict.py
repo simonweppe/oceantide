@@ -20,6 +20,11 @@ from .core import nodal, astrol
 from .constituents import OMEGA
 
 
+os.environ.update(
+    {"GOOGLE_APPLICATION_CREDENTIALS": "/source/ontide/secrets/ontide.json"}
+)
+
+
 class NCcons(object):
     """ Object to represent tidal constituents file. 
            OTIS is the format we adopt internally 
@@ -137,7 +142,6 @@ class NCcons(object):
         )
         print(self.__repr__())
 
-    
 
 def predict_tide_point(
     lon,
