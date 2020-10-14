@@ -27,9 +27,9 @@ test_requirements = [
 ]
 
 setup(
-    author=oceanum.__author__,
-    author_email=oceanum.__contact__,
-    description=ocean.__description__,
+    author=oceantide.__author__,
+    author_email=oceantide.__contact__,
+    description=oceantide.__description__,
     keywords=oceantide.__keywords__,
     version=oceantide.__version__,
     classifiers=[
