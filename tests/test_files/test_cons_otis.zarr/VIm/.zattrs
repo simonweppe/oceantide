@@ -1,0 +1,10 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "con",
+        "lat_v",
+        "lon_v"
+    ],
+    "field": "Im(V), vector W->E",
+    "long_name": "Tidal transport complex ampl., Imag part, at V-nodes",
+    "units": "meter^2/s"
+}

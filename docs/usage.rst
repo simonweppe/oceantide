@@ -2,6 +2,6 @@
 Usage
 =====
 
-To use ontide in a project::
+To use oceantide in a project::
 
-    import ontide
+    import oceantide

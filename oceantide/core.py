@@ -3,13 +3,21 @@
 """Core tools for tidal analysis and prediction."""
 
 import numpy as np
-from .constituents import PERIODS, OMEGA, V0U
+import xarray as xr
+
+from oceantide.constituents import V0U
 
 
 def nodal(time, con):
-    """ Nodal correction
-	    Derived from the tide model driver matlab scipt: nodal.m
-	"""
+    """Nodal correction.
+
+    Args:
+        time (datetime): Nodal time, the number of days since 1 Jan 1992 plus 48622.
+        con (list): List of constituents to consider, e.g., ["M2", "S2" "K1", O1].
+
+    Derived from the tide model driver matlab scipt: nodal.m.
+
+    """
     rad = np.pi / 180.0
     s, h, p, omega = astrol(time)
     sinn = np.sin(omega * rad)
@@ -80,51 +88,50 @@ def nodal(time, con):
 
     # Prepare the output data
     ncon = len(con)
-    pu = np.zeros((ncon, 1))
-    pf = np.ones((ncon, 1))
-    v0u = np.zeros((ncon, 1))
+    pu = np.zeros(ncon)
+    pf = np.ones(ncon)
+    v0u = np.zeros(ncon)
 
     for ii, vv in enumerate(con):
         if vv in ndict:
-            pu[ii, :] = ndict[vv]["u"] * rad
-            pf[ii, :] = ndict[vv]["f"]
+            pu[ii] = ndict[vv]["u"] * rad
+            pf[ii] = ndict[vv]["f"]
         if vv in V0U.keys():
-            v0u[ii, :] = V0U[vv]
+            v0u[ii] = V0U[vv]
 
     return pu, pf, v0u
 
 
 def astrol(time):
-    """ Computes the basic astronomical mean longitudes  s, h, p, N.
-        Note N is not N', i.e. N is decreasing with time.
-        These formulae are for the period 1990 - 2010, and were derived
-        by David Cartwright (personal comm., Nov. 1990).
-        time is UTC in decimal MJD.
-        All longitudes returned in degrees.
+    """Computes the basic astronomical mean longitudes  s, h, p, N.
+
+    Note N is not N', i.e. N is decreasing with time. These formulae are for the period
+        1990 - 2010, and were derived by David Cartwright (personal comm., Nov. 1990).
+        Time is UTC in decimal MJD. All longitudes returned in degrees.
         R. D. Ray    Dec. 1990
         Non-vectorized version. Re-make for matlab by Lana Erofeeva, 2003
-    
-        usage: s, h, p, N = astrol(time)
-        
-        time, MJD
-        circle = 360;
-        T = time - 51544.4993
-        mean longitude of moon
-        ----------------------
-        s = 218.3164 + 13.17639648 * T
-        mean longitude of sun
-        ---------------------
-        h = 280.4661 +  0.98564736 * T
-        mean longitude of lunar perigee
-        -------------------------------
-        p =  83.3535 +  0.11140353 * T
-        mean longitude of ascending lunar node
-        --------------------------------------
-        N = 125.0445D0 -  0.05295377D0 * T
-        s = mod(s, circle)
-        h = mod(h, circle)
-        p = mod(p, circle)
-        N = mod(N, circle)
+
+    usage: s, h, p, N = astrol(time)
+
+    time, MJD
+    circle = 360;
+    T = time - 51544.4993
+    mean longitude of moon
+    ----------------------
+    s = 218.3164 + 13.17639648 * T
+    mean longitude of sun
+    ---------------------
+    h = 280.4661 +  0.98564736 * T
+    mean longitude of lunar perigee
+    -------------------------------
+    p =  83.3535 +  0.11140353 * T
+    mean longitude of ascending lunar node
+    --------------------------------------
+    N = 125.0445D0 -  0.05295377D0 * T
+    s = mod(s, circle)
+    h = mod(h, circle)
+    p = mod(p, circle)
+    N = mod(N, circle)
 
     """
     circle = 360

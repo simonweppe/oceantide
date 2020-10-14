@@ -1,4 +1,4 @@
-Welcome to ontide's documentation!
+Welcome to oceantide's documentation!
 ======================================
 
 .. toctree::

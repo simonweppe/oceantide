@@ -8,13 +8,13 @@ Installation
 Stable release
 --------------
 
-To install ontide, run this command in your terminal:
+To install oceantide, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install ontide
+    $ pip install oceantide
 
-This is the preferred method to install ontide, as it will always install the most recent stable release.
+This is the preferred method to install oceantide, as it will always install the most recent stable release.
 
 If you don't have `pip`_ installed, this `Python installation guide`_ can guide
 you through the process.
@@ -26,19 +26,19 @@ you through the process.
 From sources
 ------------
 
-The sources for ontide can be downloaded from the `Github repo`_.
+The sources for oceantide can be downloaded from the `Github repo`_.
 
 You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/r.soutelino@oceanum.science/ontide
+    $ git clone git://github.com/oceanum/oceantide
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl  -OL https://github.com/r.soutelino@oceanum.science/ontide/tarball/master
+    $ curl  -OL https://github.com/oceanum/oceantide/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/r.soutelino@oceanum.science/ontide
-.. _tarball: https://github.com/r.soutelino@oceanum.science/ontide/tarball/master
+.. _Github repo: https://github.com/oceanum/oceantide
+.. _tarball: https://github.com/oceanum/oceantide/tarball/master
