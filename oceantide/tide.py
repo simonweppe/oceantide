@@ -110,3 +110,97 @@ class Tide:
         dsout = self._set_attributes_output(dsout)
 
         return dsout
+
+    def ellipse(self):
+        """Tidal ellipse parameters.
+
+        Convert tidal amplitude and phase lag into tidal ellipse parameters.
+
+        Returns:
+            Dataset with ellipse variables:
+                SEMA: Semi-major axes, the maximum speed.
+                ECC: Eccentricity, the ratio of semi-minor axis over the semi-major
+                    axis, negative value indicates ellipse traversed clockwise.
+                INC: Inclination, the angles (in degrees) between the semi-major axes
+                    and u-axis.
+                PHA: Phase angles, the time (in angles and in degrees) when the tidal
+                    currents reach their maximum speeds (i.e.  PHA=omega * tmax).
+                w: A matrix whose rows allow for plotting ellipses and whose columns
+                    are for different ellipses corresponding columnwise to SEMA. For
+                    example, plot(np.real(w[0, :]), np.imag(w[0, :])) will let you
+                    see the first ellipse. You may need to use squeeze function when
+                    w is a more than two dimensional array. See example.py.
+
+        Modified from:
+        _______________________________________________________________________
+        Zhigang Xu, Ph.D.
+        (pronounced as Tsi Gahng Hsu)
+        Research Scientist
+        Coastal Circulation
+        Bedford Institute of Oceanography
+        1 Challenge Dr.
+        P.O. Box 1006                    Phone  (902) 426-2307 (o)
+        Dartmouth, Nova Scotia           Fax    (902) 426-7827
+        CANADA B2Y 4A2                   email xuz@dfo-mpo.gc.ca
+        _______________________________________________________________________
+
+        Reference:
+            Xu, Zhigang (2000, 2002), Ellipse Parameters Conversion and Velocity Profiles for Tidal Currents in Matlab.
+            https://svn.oss.deltares.nl/repos/openearthtools/trunk/matlab/applications/DelftDashBoard/utils/tidal_ellipse/tidal_ellipse.ps
+
+        """
+        # Complex amplitudes for u and v
+        i = 1j
+        u = self._obj.ut.real * xr.ufuncs.exp(-i * self._obj.ut.imag)
+        v = self._obj.vt.real * xr.ufuncs.exp(-i * self._obj.vt.imag)
+
+        # Calculate complex radius of clockwise circles
+        wp = (u + i * v) / 2
+        # Calculate complex radius of anticlockwise circles
+        wm = np.conj(u - i * v) / 2
+        # Amplitudes and angles
+        Wp = np.abs(wp)
+        Wm = np.abs(wm)
+        THETAp = xr.ufuncs.angle(wp)
+        THETAm = xr.ufuncs.angle(wm)
+
+        # calculate ellipse parameters
+        SEMA = Wp + Wm  # Semi Major Axis, or maximum speed
+        SEMI = Wp - Wm  # Semi Minor Axis, or minimum speed
+        ECC = SEMI / SEMA  # Eccentricity
+
+        # Phase angle, the time (in angle) when the velocity reaches the maximum
+        PHA = (THETAm - THETAp) / 2
+        # Inclination, the angle between the semi major axis and x-axis (or u-axis)
+        INC = (THETAm + THETAp) / 2
+
+        # convert to degrees for output
+        PHA = PHA / np.pi * 180
+        INC = INC / np.pi * 180
+        THETAp = THETAp / np.pi * 180
+        THETAm = THETAm / np.pi * 180
+
+        # map the resultant angles to the range of [0, 360].
+        PHA = np.mod(PHA + 360, 360)
+        INC = np.mod(INC + 360, 360)
+
+        k = xr.ufuncs.fix(INC / 180)
+        INC = INC - k * 180
+        PHA = PHA + k * 180
+        PHA = np.mod(PHA, 360)
+
+        ndot = np.prod(np.shape(SEMA))
+        dot = 2 * np.pi / ndot
+        ot = np.arange(0, 2 * np.pi, dot)
+        wp_stacked = wp.stack({"stacked": ("con", "lat", "lon")})
+        wm_stacked = wm.stack({"stacked": ("con", "lat", "lon")})
+        w = (wp_stacked * np.exp(i * ot) + wm_stacked * np.exp(-i * ot)).unstack()
+
+        dsout = xr.Dataset()
+        dsout["SEMA"] = SEMA
+        dsout["ECC"] = ECC
+        dsout["INC"] = INC
+        dsout["PHA"] = PHA
+        dsout["w"] = w
+
+        return dsout
