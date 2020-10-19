@@ -5,7 +5,7 @@ import numpy as np
 import dask.array as da
 import xarray as xr
 
-from oceantide.core import nodal
+from oceantide.core.utils import nodal
 from oceantide.constituents import OMEGA
 
 
