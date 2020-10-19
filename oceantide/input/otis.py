@@ -69,18 +69,16 @@ class Otis:
         """Convert Arakawa into a common grid at the cell centre."""
         lat = self.ds.lat_z
         lon = self.ds.lon_z
+
         self.ds = self.ds.interp(
             coords={"lon_u": lon, "lon_v": lon, "lat_u": lat, "lat_v": lat},
             kwargs={"fill_value": "extrapolate"},
-        )
-        self.ds = self.ds.assign_coords(
-            {"lat_u": lat, "lat_v": lat, "lon_u": lon, "lon_v": lon}
-        )
-        self.ds = self.ds.rename(
-            {"lat_z": "lat", "lon_z": "lon", "hz": "depth", "mz": "mask"}
-        )
+        ).reset_coords().rename({"lat_z": "lat", "lon_z": "lon", "hz": "depth"})
+
+        self.ds = self.ds.where(self.ds.hRe.notnull()).where(self.ds.uRe.notnull())
+
         self.ds = self.ds.drop_vars(
-            ["lat_u", "lat_v", "lon_u", "lon_v", "hu", "hv", "mu", "mv"]
+            ["lat_u", "lat_v", "lon_u", "lon_v", "hu", "hv", "mz", "mu", "mv"]
         )
 
     def _format_cons(self):
@@ -92,7 +90,6 @@ class Otis:
     def _set_attributes(self):
         """Define attributes for formatted dataset."""
         self.ds.attrs = {"description": "Tide constituents"}
-        self.ds.mask.attrs = {"standard_name": "land_binary_mask", "units": "1"}
         self.ds.depth.attrs = {
             "standard_name": "sea_floor_depth_below_mean_sea_level",
             "units": "m",
