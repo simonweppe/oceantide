@@ -72,7 +72,9 @@ def read_otis_netcdf(filename=None, gfile=None, hfile=None, ufile=None):
     dset["vIm"] = dset["VIm"] / dset["hv"]
     dset["con"] = dset.con.astype("S4")
 
+    dset = dset.where(dset < 1e10)
     dset = from_otis(dset)
+
     return dset
 
 
