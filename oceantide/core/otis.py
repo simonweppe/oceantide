@@ -42,9 +42,9 @@ def otis_filenames(filename):
         filename (str): Name of `Model_*` metadata file specifying other files to read.
 
     Returns:
-        gfile (str):
-        hfile (str):
-        ufile (str):
+        gfile (str): Name of grid file to read, by default defined from `filename`.
+        hfile (str): Name of elevation file to read, by default defined from `filename`.
+        ufile (str): Name of currents file to read, by default defined from `filename`.
 
     """
     with open(filename) as stream:
