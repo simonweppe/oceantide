@@ -52,11 +52,30 @@ def otis_filenames(filename):
     for f in files:
         if "grid" in f:
             gfile = os.path.basename(f)
-        elif "uv." in f:
+        elif "uv." in f or "uv_" in f:
             ufile = os.path.basename(f)
-        elif "h." in f or "hf." in f:
+        elif "h." in f or "hf." in f or "h_" in f or "hf_" in f:
             hfile = os.path.basename(f)
     return gfile, hfile, ufile
+
+
+def read_otis_bin_cons(hfile):
+    """Read constituents from otis binary file.
+
+    Args:
+        hfile (str): Name of elevation constituents binary file to read.
+
+    Returns:
+        cons (array 1d): Constituents with '|S4' dtype.
+
+    """
+    CHAR = np.dtype(">c")
+    with open(hfile, "rb") as f:
+        __, __, __, ncons = np.fromfile(f, dtype=np.int32, count=4).byteswap(True)
+        np.fromfile(f, dtype=np.int32, count=4)[0]
+        cons = [np.fromfile(f, CHAR, 4).tobytes().upper() for i in range(ncons)]
+        cons = np.array([c.ljust(4).lower() for c in cons])
+    return cons
 
 
 class Otis:
