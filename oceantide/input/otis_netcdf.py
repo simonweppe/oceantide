@@ -76,9 +76,3 @@ def read_otis_netcdf(filename=None, gfile=None, hfile=None, ufile=None):
     dset = from_otis(dset)
 
     return dset
-
-
-if __name__ == "__main__":
-
-    filename = "/data/tide/otis_tpxo8_raw_files/netcdf/tmp/DATA/Model_ES2008"
-    dset = read_otis_netcdf(filename)
