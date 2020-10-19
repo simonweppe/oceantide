@@ -6,7 +6,7 @@ from oceantide.core.otis import from_otis, otis_filenames
 from oceantide.tide import Tide
 
 
-def read_otis_netcdf(filename, gfile=None, hfile=None, ufile=None):
+def read_otis_netcdf(filename=None, gfile=None, hfile=None, ufile=None):
     """Read Otis Netcdf file format.
 
     Args:
@@ -29,6 +29,9 @@ def read_otis_netcdf(filename, gfile=None, hfile=None, ufile=None):
             (`gfile`, `hfile` and `ufile`).
 
     """
+    if not (filename is not None or all(gfile, hfile, ufile)):
+        raise ValueError("Either specify `filename` or all of `gfile`, `hfile`, `ufile`.")
+
     dirname = os.path.dirname(filename)
     _gfile, _hfile, _ufile = otis_filenames(filename)
     gfile = gfile or os.path.join(dirname, _gfile)
