@@ -17,12 +17,21 @@ def dset():
     yield _dset
 
 
+@pytest.fixture(scope="function")
+def computed_dset():
+    filename = os.path.join(
+        FILES_DIR, "otis_merged_tide_timeseries_hourly_2001-01-01T00z_2001-01-01T06z.nc"
+    )
+    _dset = xr.open_dataset(filename)
+    return _dset
+
+
 def test_accessor_created(dset):
     assert hasattr(dset, "tide")
     assert hasattr(dset.tide, "predict")
 
 
-def test_predict(dset):
-    times = [datetime.datetime(2001, 1, 1, H) for H in range(24)]
+def test_predict(dset, computed_dset):
+    times = [datetime.datetime(2001, 1, 1, H) for H in range(6)]
     eta = dset.tide.predict(times)
-    assert times == list(eta.time.to_index().to_pydatetime())
+    assert eta.equals(computed_dset)
