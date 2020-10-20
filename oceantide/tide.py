@@ -56,20 +56,23 @@ class Tide:
             * Constituents coordinate appropriately formatted.
 
         """
-        if not {"h", "u", "v"}.issubset(self._obj.data_vars):
-            return False
-        for v in ["h", "u", "v"]:
+        required_vars = ["et", "ut", "vt"]
+        if not set(required_vars).issubset(self._obj.data_vars):
+            raise ValueError(
+                f"Tide accessor requires variables {required_vars} in dataset but "
+                f"only found {list(self._obj.data_vars.keys())}."
+            )
+
+        for v in required_vars:
             if not np.iscomplexobj(self._obj[v]):
-                return False
-        if not (
-            self._obj.h.coords.indexes
-            == self._obj.u.coords.indexes
-            == self._obj.v.coords.indexes
-        ):
-            return False
+                raise ValueError(f"Variable {v} must be complex type.")
+
+        vars_dims = [self._obj[v].dims for v in required_vars]
+        if len(set(vars_dims)) != 1:
+            raise ValueError(f"Variables {required_vars} must share a common grid.")
+
         if self._obj.con.dtype != np.dtype("<U2"):
-            return False
-        return True
+            raise ValueError(f"Coordinate `con` must be <U2 dtype, found {self._obj.con.dtype}")
 
     def predict(self, times, time_chunk=50):
         """Predict tide timeseries.
