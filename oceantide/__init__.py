@@ -8,6 +8,9 @@ __description__ = "Library for ocean tidal prediction"
 __keywords__ = "ocean tide prediction constituents xarray accessor"
 
 
+from oceantide.tide import Tide
+
+
 def _import_read_functions(pkgname="input"):
     """Make read functions available at module level.
 
