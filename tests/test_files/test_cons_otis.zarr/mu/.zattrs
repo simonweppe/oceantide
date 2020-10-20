@@ -1,9 +1,0 @@
-{
-    "_ARRAY_DIMENSIONS": [
-        "lat_u",
-        "lon_u"
-    ],
-    "long_name": "water land mask on U nodes",
-    "option_0": "land",
-    "option_1": "water"
-}

@@ -1,9 +1,0 @@
-{
-    "_ARRAY_DIMENSIONS": [
-        "lat_u",
-        "lon_u"
-    ],
-    "field": "bathy, scalar",
-    "long_name": "Bathymetry at U-nodes",
-    "units": "meter"
-}

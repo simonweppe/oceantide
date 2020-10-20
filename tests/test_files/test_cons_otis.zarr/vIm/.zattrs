@@ -1,9 +1,0 @@
-{
-    "_ARRAY_DIMENSIONS": [
-        "con",
-        "lat_v",
-        "lon_v"
-    ],
-    "long_name": "Tidal NS velocities complex ampl., Imag part, at V-nodes",
-    "units": "meter/s"
-}
