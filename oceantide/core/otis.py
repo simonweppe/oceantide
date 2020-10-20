@@ -59,6 +59,45 @@ def otis_filenames(filename):
     return gfile, hfile, ufile
 
 
+def read_otis_bin_uv(uvfile):
+    """Read transport constituents data from otis binary file.
+
+    Args:
+        uvfile (str): Name of transport constituents binary file to read.
+
+    Returns:
+        URe (array 3d): Real U component URe(con,lat,lon).
+        UIm (array 3d): Imag U component UIm(con,lat,lon).
+        VRe (array 3d): Real V component VRe(con,lat,lon).
+        VIm (array 3d): Imag V component VIm(con,lat,lon).
+
+    """
+    with open(uvfile, "rb") as f:
+        ll, nx, ny, nc = np.fromfile(f, dtype=np.int32, count=4).byteswap(True)
+
+    URe = np.zeros((nc, ny, nx))
+    UIm = np.zeros((nc, ny, nx))
+    VRe = np.zeros((nc, ny, nx))
+    VIm = np.zeros((nc, ny, nx))
+
+    for ic in range(nc):
+        with open(uvfile, "rb") as f:
+            np.fromfile(f, dtype=np.int32, count=4).byteswap(True)
+            np.fromfile(f, dtype=np.float32, count=4).byteswap(True)
+
+            nskip = int((ic) * (nx * ny * 16 + 8) + 8 + ll - 28)
+            f.seek(nskip, 1)
+            data = np.fromfile(f, dtype=np.float32, count=4 * nx * ny).byteswap(True)
+            data = data.reshape((ny, 4 * nx))
+
+        URe[ic] = data[:, 0 : 4 * nx - 3 : 4]
+        UIm[ic] = data[:, 1 : 4 * nx - 2 : 4]
+        VRe[ic] = data[:, 2 : 4 * nx - 1 : 4]
+        VIm[ic] = data[:, 3 : 4 * nx : 4]
+
+    return URe, UIm, VRe, VIm
+
+
 def read_otis_bin_h(hfile):
     """Read elevation constituents data from otis binary file.
 
@@ -85,7 +124,8 @@ def read_otis_bin_h(hfile):
             nskip = int((ic)*(nx * ny * 8 + 8) + 8 + ll - 28)
             f.seek(nskip, 1)
 
-            data = np.fromfile(f, dtype=np.float32, count=2*nx*ny).byteswap(True).reshape((ny, 2*nx))
+            data = np.fromfile(f, dtype=np.float32, count=2 * nx * ny).byteswap(True)
+            data = data.reshape((ny, 2 * nx))
             hRe[ic] = data[:, 0 : 2*nx-1 : 2]
             hIm[ic] = data[:, 1 : 2*nx : 2]
 
