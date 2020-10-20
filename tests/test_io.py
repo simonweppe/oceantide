@@ -20,5 +20,12 @@ def test_read_otis_merged():
 
 
 def test_read_otis_binary():
-    dset = read_otis_binary(os.path.join(FILES_DIR, "otis_binary/Model_rag"))
+    read_otis_binary(os.path.join(FILES_DIR, "otis_binary/Model_rag"))
 
+
+def test_read_otis_binary():
+    read_otis_binary(os.path.join(FILES_DIR, "otis_binary/Model_rag"))
+
+
+def test_read_otis_netcdf():
+    read_otis_netcdf(os.path.join(FILES_DIR, "otis_netcdf/Model_test"))
