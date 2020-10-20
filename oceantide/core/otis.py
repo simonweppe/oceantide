@@ -59,6 +59,39 @@ def otis_filenames(filename):
     return gfile, hfile, ufile
 
 
+def read_otis_bin_h(hfile):
+    """Read elevation constituents data from otis binary file.
+
+    Args:
+        hfile (str): Name of elevation constituents binary file to read.
+
+    Returns:
+        hRe (array 3d): Real elevation component hRe(con,lat,lon).
+        hIm (array 3d): Imag elevation component hIm(con,lat,lon).
+
+    """
+    with open(hfile, "rb") as f:
+        ll, nx, ny, nc = np.fromfile(f, dtype=np.int32, count=4).byteswap(True)
+        # y0, y1, x0, x1 = np.fromfile(f, dtype=np.float32, count=4).byteswap(True)
+
+    hRe = np.zeros((nc, ny, nx))
+    hIm = np.zeros((nc, ny, nx))
+
+    for ic in range(nc):
+        with open(hfile, "rb") as f:
+            np.fromfile(f, dtype=np.int32, count=4)
+            np.fromfile(f, dtype=np.float32, count=4)
+
+            nskip = int((ic)*(nx * ny * 8 + 8) + 8 + ll - 28)
+            f.seek(nskip, 1)
+
+            data = np.fromfile(f, dtype=np.float32, count=2*nx*ny).byteswap(True).reshape((ny, 2*nx))
+            hRe[ic] = data[:, 0 : 2*nx-1 : 2]
+            hIm[ic] = data[:, 1 : 2*nx : 2]
+
+    return hRe, hIm
+
+
 def read_otis_bin_cons(hfile):
     """Read constituents from otis binary file.
 
@@ -71,9 +104,9 @@ def read_otis_bin_cons(hfile):
     """
     CHAR = np.dtype(">c")
     with open(hfile, "rb") as f:
-        __, __, __, ncons = np.fromfile(f, dtype=np.int32, count=4).byteswap(True)
+        __, __, __, nc = np.fromfile(f, dtype=np.int32, count=4).byteswap(True)
         np.fromfile(f, dtype=np.int32, count=4)[0]
-        cons = [np.fromfile(f, CHAR, 4).tobytes().upper() for i in range(ncons)]
+        cons = [np.fromfile(f, CHAR, 4).tobytes().upper() for i in range(nc)]
         cons = np.array([c.ljust(4).lower() for c in cons])
     return cons
 
