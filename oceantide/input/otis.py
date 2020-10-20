@@ -70,10 +70,14 @@ class Otis:
         lat = self.ds.lat_z
         lon = self.ds.lon_z
 
-        self.ds = self.ds.interp(
-            coords={"lon_u": lon, "lon_v": lon, "lat_u": lat, "lat_v": lat},
-            kwargs={"fill_value": "extrapolate"},
-        ).reset_coords().rename({"lat_z": "lat", "lon_z": "lon", "hz": "depth"})
+        self.ds = (
+            self.ds.interp(
+                coords={"lon_u": lon, "lon_v": lon, "lat_u": lat, "lat_v": lat},
+                kwargs={"fill_value": "extrapolate"},
+            )
+            .reset_coords()
+            .rename({"lat_z": "lat", "lon_z": "lon", "hz": "depth"})
+        )
 
         self.ds = self.ds.where(self.ds.hRe.notnull()).where(self.ds.uRe.notnull())
 
@@ -106,14 +110,8 @@ class Otis:
             "standard_name": "tidal_ns_velocity_complex_amplitude",
             "units": "m",
         }
-        self.ds.lat.attrs = {
-            "standard_name": "latitude",
-            "units": "degrees_north"
-        }
-        self.ds.lon.attrs = {
-            "standard_name": "longitude",
-            "units": "degrees_east"
-        }
+        self.ds.lat.attrs = {"standard_name": "latitude", "units": "degrees_north"}
+        self.ds.lon.attrs = {"standard_name": "longitude", "units": "degrees_east"}
 
     def validate(self):
         """Check that input dataset has all requirements."""

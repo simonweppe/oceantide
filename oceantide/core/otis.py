@@ -124,13 +124,13 @@ def read_otis_bin_h(hfile):
             np.fromfile(f, dtype=np.int32, count=4)
             np.fromfile(f, dtype=np.float32, count=4)
 
-            nskip = int((ic)*(nx * ny * 8 + 8) + 8 + ll - 28)
+            nskip = int((ic) * (nx * ny * 8 + 8) + 8 + ll - 28)
             f.seek(nskip, 1)
 
             data = np.fromfile(f, dtype=np.float32, count=2 * nx * ny).byteswap(True)
             data = data.reshape((ny, 2 * nx))
-            hRe[ic] = data[:, 0 : 2*nx-1 : 2]
-            hIm[ic] = data[:, 1 : 2*nx : 2]
+            hRe[ic] = data[:, 0 : 2 * nx - 1 : 2]
+            hIm[ic] = data[:, 1 : 2 * nx : 2]
 
     return hRe, hIm
 
@@ -155,7 +155,7 @@ def read_otis_bin_cons(hfile):
 
 
 def read_otis_bin_grid(gfile):
-    """ Reads grid data from otis binary file.
+    """Reads grid data from otis binary file.
 
     Args:
         gfile (str): Name of grid binary file to read.
@@ -250,9 +250,7 @@ class Otis:
 
         self.ds = self.ds.rename({"lat_z": "lat", "lon_z": "lon", "hz": "depth"})
 
-        self.ds = self.ds.drop_vars(
-            ["lat_u", "lat_v", "lon_u", "lon_v", "hu", "hv"]
-        )
+        self.ds = self.ds.drop_vars(["lat_u", "lat_v", "lon_u", "lon_v", "hu", "hv"])
 
     def _format_cons(self):
         """Format constituents coordinates."""
@@ -279,18 +277,9 @@ class Otis:
             "standard_name": "tidal_ns_velocity_complex_amplitude",
             "units": "m",
         }
-        self.ds.con.attrs = {
-            "standard_name": "tidal_constituent",
-            "units": ""
-        }
-        self.ds.lat.attrs = {
-            "standard_name": "latitude",
-            "units": "degrees_north"
-        }
-        self.ds.lon.attrs = {
-            "standard_name": "longitude",
-            "units": "degrees_east"
-        }
+        self.ds.con.attrs = {"standard_name": "tidal_constituent", "units": ""}
+        self.ds.lat.attrs = {"standard_name": "latitude", "units": "degrees_north"}
+        self.ds.lon.attrs = {"standard_name": "longitude", "units": "degrees_east"}
 
     def validate(self):
         """Check that input dataset has all requirements."""
@@ -313,4 +302,3 @@ class Otis:
         self._format_cons()
         self._to_complex()
         self._set_attributes()
-

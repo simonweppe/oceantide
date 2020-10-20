@@ -30,7 +30,9 @@ def read_otis_netcdf(filename=None, gfile=None, hfile=None, ufile=None):
 
     """
     if not (filename is not None or all(gfile, hfile, ufile)):
-        raise ValueError("Either specify `filename` or all of `gfile`, `hfile`, `ufile`.")
+        raise ValueError(
+            "Either specify `filename` or all of `gfile`, `hfile`, `ufile`."
+        )
 
     dirname = os.path.dirname(filename)
     _gfile, _hfile, _ufile = otis_filenames(filename)

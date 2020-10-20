@@ -3,7 +3,14 @@ import os
 import dask.array as da
 import xarray as xr
 
-from oceantide.core.otis import from_otis, otis_filenames, read_otis_bin_cons, read_otis_bin_grid, read_otis_bin_h, read_otis_bin_uv
+from oceantide.core.otis import (
+    from_otis,
+    otis_filenames,
+    read_otis_bin_cons,
+    read_otis_bin_grid,
+    read_otis_bin_h,
+    read_otis_bin_uv,
+)
 from oceantide.tide import Tide
 
 
@@ -31,7 +38,9 @@ def read_otis_binary(filename=None, gfile=None, hfile=None, ufile=None):
 
     """
     if not (filename is not None or all(gfile, hfile, ufile)):
-        raise ValueError("Either specify `filename` or all of `gfile`, `hfile`, `ufile`.")
+        raise ValueError(
+            "Either specify `filename` or all of `gfile`, `hfile`, `ufile`."
+        )
 
     dirname = os.path.dirname(filename)
     _gfile, _hfile, _ufile = otis_filenames(filename)
