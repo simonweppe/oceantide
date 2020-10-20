@@ -18,17 +18,6 @@ from oceantide.input import read_dataset
 from oceantide.tide import Tide
 
 
-# def read_otis(filename, file_format="netcdf"):
-#     """Read tide constituents from Otis format.
-
-#     Args:
-#         filename (str):
-
-#     """
-#     dset = read_dataset(filename, file_format=file_format)
-#     return from_otis(dset)
-
-
 def from_otis(dset):
     """Format Otis-like dataset to implement the oceantide accessor."""
     otis = Otis(dset)
@@ -250,7 +239,10 @@ class Otis:
 
         self.ds = self.ds.rename({"lat_z": "lat", "lon_z": "lon", "hz": "depth"})
 
-        self.ds = self.ds.drop_vars(["lat_u", "lat_v", "lon_u", "lon_v", "hu", "hv"])
+        self.ds = self.ds.drop_vars(
+            ["lat_u", "lat_v", "lon_u", "lon_v", "hu", "hv", "mz", "mu", "mv"],
+            errors="ignore",
+        )
 
     def _format_cons(self):
         """Format constituents coordinates."""
