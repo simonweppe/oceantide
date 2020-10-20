@@ -1,0 +1,7 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "lat_z"
+    ],
+    "long_name": "latitude of Z nodes",
+    "units": "degree_north"
+}

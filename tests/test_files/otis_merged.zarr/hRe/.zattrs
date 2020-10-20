@@ -1,0 +1,10 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "con",
+        "lat_z",
+        "lon_z"
+    ],
+    "field": "Re(h), scalar",
+    "long_name": "Tidal elevation complex amplitude, Real part",
+    "units": "meter"
+}

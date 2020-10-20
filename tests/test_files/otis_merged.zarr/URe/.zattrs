@@ -1,0 +1,10 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "con",
+        "lat_u",
+        "lon_u"
+    ],
+    "field": "Re(U), vector W->E",
+    "long_name": "Tidal transport complex ampl., Real part, at U-nodes",
+    "units": "meter^2/s"
+}

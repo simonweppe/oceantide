@@ -1,0 +1,722 @@
+{
+    "metadata": {
+        ".zattrs": {
+            "description": "Tidal constituents in OTIS format",
+            "institution": "Oceanum Ltd"
+        },
+        ".zgroup": {
+            "zarr_format": 2
+        },
+        "UIm/.zarray": {
+            "chunks": [
+                3,
+                137,
+                253
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3,
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "UIm/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "con",
+                "lat_u",
+                "lon_u"
+            ],
+            "field": "Im(U), vector W->E",
+            "long_name": "Tidal transport complex ampl., Imag part, at U-nodes",
+            "units": "meter^2/s"
+        },
+        "URe/.zarray": {
+            "chunks": [
+                3,
+                137,
+                253
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3,
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "URe/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "con",
+                "lat_u",
+                "lon_u"
+            ],
+            "field": "Re(U), vector W->E",
+            "long_name": "Tidal transport complex ampl., Real part, at U-nodes",
+            "units": "meter^2/s"
+        },
+        "VIm/.zarray": {
+            "chunks": [
+                3,
+                137,
+                253
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3,
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "VIm/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "con",
+                "lat_v",
+                "lon_v"
+            ],
+            "field": "Im(V), vector W->E",
+            "long_name": "Tidal transport complex ampl., Imag part, at V-nodes",
+            "units": "meter^2/s"
+        },
+        "VRe/.zarray": {
+            "chunks": [
+                3,
+                137,
+                253
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3,
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "VRe/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "con",
+                "lat_v",
+                "lon_v"
+            ],
+            "field": "Re(V), vector W->E",
+            "long_name": "Tidal transport complex ampl., Real part, at V-nodes",
+            "units": "meter^2/s"
+        },
+        "con/.zarray": {
+            "chunks": [
+                9
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "|S4",
+            "fill_value": null,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3
+            ],
+            "zarr_format": 2
+        },
+        "con/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "con"
+            ],
+            "long_name": "Tidal constituents"
+        },
+        "hIm/.zarray": {
+            "chunks": [
+                3,
+                137,
+                253
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3,
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "hIm/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "con",
+                "lat_z",
+                "lon_z"
+            ],
+            "field": "Im(h), scalar",
+            "long_name": "Tidal elevation complex amplitude, Imag part",
+            "units": "meter"
+        },
+        "hRe/.zarray": {
+            "chunks": [
+                3,
+                137,
+                253
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3,
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "hRe/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "con",
+                "lat_z",
+                "lon_z"
+            ],
+            "field": "Re(h), scalar",
+            "long_name": "Tidal elevation complex amplitude, Real part",
+            "units": "meter"
+        },
+        "hu/.zarray": {
+            "chunks": [
+                137,
+                505
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "hu/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lat_u",
+                "lon_u"
+            ],
+            "field": "bathy, scalar",
+            "long_name": "Bathymetry at U-nodes",
+            "units": "meter"
+        },
+        "hv/.zarray": {
+            "chunks": [
+                137,
+                505
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "hv/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lat_v",
+                "lon_v"
+            ],
+            "field": "bathy, scalar",
+            "long_name": "Bathymetry at V-nodes",
+            "units": "meter"
+        },
+        "hz/.zarray": {
+            "chunks": [
+                137,
+                505
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "hz/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lat_z",
+                "lon_z"
+            ],
+            "field": "bathy, scalar",
+            "long_name": "Bathymetry at Z-nodes",
+            "units": "meter"
+        },
+        "lat_u/.zarray": {
+            "chunks": [
+                274
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                19
+            ],
+            "zarr_format": 2
+        },
+        "lat_u/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lat_u"
+            ],
+            "long_name": "latitude of U nodes",
+            "units": "degree_north"
+        },
+        "lat_v/.zarray": {
+            "chunks": [
+                274
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                19
+            ],
+            "zarr_format": 2
+        },
+        "lat_v/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lat_v"
+            ],
+            "long_name": "latitude of V nodes",
+            "units": "degree_north"
+        },
+        "lat_z/.zarray": {
+            "chunks": [
+                274
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                19
+            ],
+            "zarr_format": 2
+        },
+        "lat_z/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lat_z"
+            ],
+            "long_name": "latitude of Z nodes",
+            "units": "degree_north"
+        },
+        "lon_u/.zarray": {
+            "chunks": [
+                505
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                34
+            ],
+            "zarr_format": 2
+        },
+        "lon_u/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lon_u"
+            ],
+            "long_name": "longitude of U nodes",
+            "units": "degree_east"
+        },
+        "lon_v/.zarray": {
+            "chunks": [
+                505
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                34
+            ],
+            "zarr_format": 2
+        },
+        "lon_v/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lon_v"
+            ],
+            "long_name": "longitude of V nodes",
+            "units": "degree_east"
+        },
+        "lon_z/.zarray": {
+            "chunks": [
+                505
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                34
+            ],
+            "zarr_format": 2
+        },
+        "lon_z/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lon_z"
+            ],
+            "long_name": "longitude of Z nodes",
+            "units": "degree_east"
+        },
+        "mu/.zarray": {
+            "chunks": [
+                137,
+                505
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<i4",
+            "fill_value": null,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "mu/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lat_u",
+                "lon_u"
+            ],
+            "long_name": "water land mask on U nodes",
+            "option_0": "land",
+            "option_1": "water"
+        },
+        "mv/.zarray": {
+            "chunks": [
+                137,
+                505
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<i4",
+            "fill_value": null,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "mv/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lat_v",
+                "lon_v"
+            ],
+            "long_name": "water land mask on V nodes",
+            "option_0": "land",
+            "option_1": "water"
+        },
+        "mz/.zarray": {
+            "chunks": [
+                137,
+                505
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<i4",
+            "fill_value": null,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "mz/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lat_z",
+                "lon_z"
+            ],
+            "long_name": "water land mask on Z nodes",
+            "option_0": "land",
+            "option_1": "water"
+        },
+        "uIm/.zarray": {
+            "chunks": [
+                3,
+                137,
+                253
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3,
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "uIm/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "con",
+                "lat_u",
+                "lon_u"
+            ],
+            "long_name": "Tidal WE velocities complex ampl., Imag part, at U-nodes",
+            "units": "meter/s"
+        },
+        "uRe/.zarray": {
+            "chunks": [
+                3,
+                137,
+                253
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3,
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "uRe/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "con",
+                "lat_u",
+                "lon_u"
+            ],
+            "long_name": "Tidal WE velocities complex ampl., Real part, at U-nodes",
+            "units": "meter/s"
+        },
+        "vIm/.zarray": {
+            "chunks": [
+                3,
+                137,
+                253
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3,
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "vIm/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "con",
+                "lat_v",
+                "lon_v"
+            ],
+            "long_name": "Tidal NS velocities complex ampl., Imag part, at V-nodes",
+            "units": "meter/s"
+        },
+        "vRe/.zarray": {
+            "chunks": [
+                3,
+                137,
+                253
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3,
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "vRe/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "con",
+                "lat_v",
+                "lon_v"
+            ],
+            "long_name": "Tidal NS velocities complex ampl., Real part, at V-nodes",
+            "units": "meter/s"
+        }
+    },
+    "zarr_consolidated_format": 1
+}
