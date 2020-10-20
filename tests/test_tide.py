@@ -4,16 +4,16 @@ import pytest
 import datetime
 import xarray as xr
 
-from oceantide import read_otis
-from oceantide.tide import Tide
+from oceantide import read_otis_merged
+
 
 FILES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_files")
 
 
 @pytest.fixture(scope="module")
 def dset():
-    filename = os.path.join(FILES_DIR, "test_cons_otis.nc")
-    _dset = read_otis(filename)
+    filename = os.path.join(FILES_DIR, "otis_merged.nc")
+    _dset = read_otis_merged(filename)
     yield _dset
 
 
