@@ -49,13 +49,17 @@ def otis_filenames(filename):
     """
     with open(filename) as stream:
         files = stream.read().split()
+    gfile = ufile = hfile = None
     for f in files:
         if "grid" in f:
             gfile = os.path.basename(f)
-        elif "uv." in f or "uv_" in f:
+        elif "uv." in f or "uv_" in f or "UV." in f or "UV_" in f:
             ufile = os.path.basename(f)
         elif "h." in f or "hf." in f or "h_" in f or "hf_" in f:
             hfile = os.path.basename(f)
+    assert gfile, f"Cannot identify {gfile} from {filename} ({files})"
+    assert hfile, f"Cannot identify {hfile} from {filename} ({files})"
+    assert ufile, f"Cannot identify {ufile} from {filename} ({files})"
     return gfile, hfile, ufile
 
 
@@ -111,7 +115,6 @@ def read_otis_bin_h(hfile):
     """
     with open(hfile, "rb") as f:
         ll, nx, ny, nc = np.fromfile(f, dtype=np.int32, count=4).byteswap(True)
-        # y0, y1, x0, x1 = np.fromfile(f, dtype=np.float32, count=4).byteswap(True)
 
     hRe = np.zeros((nc, ny, nx))
     hIm = np.zeros((nc, ny, nx))
@@ -149,6 +152,54 @@ def read_otis_bin_cons(hfile):
         cons = [np.fromfile(f, CHAR, 4).tobytes().upper() for i in range(nc)]
         cons = np.array([c.ljust(4).lower() for c in cons])
     return cons
+
+
+def read_otis_bin_grid(gfile):
+    """ Reads grid data from otis binary file.
+
+    Args:
+        gfile (str): Name of grid binary file to read.
+
+    Returns:
+        lon_z, lat_z, lon_u, lat_u, lon_v, lat_v (1darray): Arakawa C-grid coordinates.
+        hz (2darray): Depth at Z nodes.
+        mz (2darray): Mask at Z nodes.
+
+    """
+    with open(gfile, "rb") as f:
+
+        f.seek(4, 0)
+        n, m = np.fromfile(f, dtype=np.int32, count=2).byteswap(True)
+        y0, y1, x0, x1 = np.fromfile(f, dtype=np.float32, count=4).byteswap(True)
+        np.fromfile(f, dtype=np.float32, count=1).byteswap(True)
+
+        nob = np.fromfile(f, dtype=np.int32, count=1).byteswap(True)
+        if nob == 0:
+            f.seek(20, 1)
+            iob = []
+        else:
+            f.seek(8, 1)
+            iob = np.fromfile(f, dtype=np.int32, count=int(2 * nob)).byteswap(True)
+            iob = iob.reshape((2, int(nob)))
+            f.seek(8, 1)
+
+        hz = np.fromfile(f, dtype=np.float32, count=int(n * m)).byteswap(True)
+        f.seek(8, 1)
+        mz = np.fromfile(f, dtype=np.int32, count=int(n * m)).byteswap(True)
+
+        hz = hz.reshape((m, n))
+        mz = mz.reshape((m, n))
+
+    lon_z = np.linspace(x0, x1, n)
+    lat_z = np.linspace(y0, y1, m)
+    xoffset = (lon_z[1] - lon_z[0]) / 2.0
+    yoffset = (lat_z[1] - lat_z[0]) / 2.0
+    lon_u = lon_z - xoffset
+    lat_u = lat_z.copy()
+    lon_v = lon_z.copy()
+    lat_v = lat_z - yoffset
+
+    return lon_z, lat_z, lon_u, lat_u, lon_v, lat_v, hz, mz
 
 
 class Otis:
