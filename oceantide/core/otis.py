@@ -40,15 +40,15 @@ def otis_filenames(filename):
         files = stream.read().split()
     gfile = ufile = hfile = None
     for f in files:
-        if "grid" in f:
+        if f.startswith("g"):
             gfile = os.path.basename(f)
-        elif "uv." in f or "uv_" in f or "UV." in f or "UV_" in f:
+        elif f.startswith("u"):
             ufile = os.path.basename(f)
-        elif "h." in f or "hf." in f or "h_" in f or "hf_" in f:
+        elif f.startswith("h"):
             hfile = os.path.basename(f)
-    assert gfile, f"Cannot identify {gfile} from {filename} ({files})"
-    assert hfile, f"Cannot identify {hfile} from {filename} ({files})"
-    assert ufile, f"Cannot identify {ufile} from {filename} ({files})"
+    assert gfile, f"Cannot identify gfile from {filename} ({files})"
+    assert hfile, f"Cannot identify hfile from {filename} ({files})"
+    assert ufile, f"Cannot identify ufile from {filename} ({files})"
     return gfile, hfile, ufile
 
 
