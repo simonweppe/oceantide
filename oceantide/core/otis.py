@@ -180,14 +180,19 @@ def read_otis_bin_grid(gfile):
         hz = hz.reshape((m, n))
         mz = mz.reshape((m, n))
 
-    lon_z = np.linspace(x0, x1, n)
-    lat_z = np.linspace(y0, y1, m)
-    xoffset = (lon_z[1] - lon_z[0]) / 2.0
-    yoffset = (lat_z[1] - lat_z[0]) / 2.0
-    lon_u = lon_z - xoffset
-    lat_u = lat_z.copy()
-    lon_v = lon_z.copy()
-    lat_v = lat_z - yoffset
+    dx = (x1 - x0) / n
+    dy = (y1 - y0) / m
+
+    xcorner = np.clip(np.arange(x0, x1, dx), x0, x1)[0 : n]
+    ycorner = np.clip(np.arange(y0, y1, dy), y0, y1)[0 : m]
+
+    lon_z = xcorner + dx / 2
+    lon_u = xcorner
+    lon_v = xcorner + dx / 2
+
+    lat_z = ycorner + dy / 2
+    lat_u = ycorner + dy / 2
+    lat_v = ycorner
 
     return lon_z, lat_z, lon_u, lat_u, lon_v, lat_v, hz, mz
 
