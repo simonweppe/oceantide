@@ -9,6 +9,7 @@ def read_otis_merged(filename, file_format="netcdf"):
 
     Args:
         filename (str): Name of Otis custom merged netcdf file to read.
+        file_format (str): format of file to open, one of `netcdf` or `zarr`.
 
     Otis custom merged format was defined in an attempt to have one single file with
         all required data conforming to CF-standards. The dataset should look like:
