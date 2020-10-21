@@ -9,12 +9,12 @@ def read_dataset(
     """Read constituents dataset in either netcdf or zarr format.
 
     Args:
-        - filename_or_fileglob (str): filename or fileglob specifying multiple
-          files to read.
-        - file_format (str): format of file to open, one of `netcdf` or `zarr`.
+        filename_or_fileglob (str): filename or fileglob specifying multiple
+            files to read.
+            file_format (str): format of file to open, one of `netcdf` or `zarr`.
 
     Returns:
-        - dset (Dataset): spectra dataset object read from file.
+        dset (Dataset): spectra dataset object read from file.
 
     """
     if file_format == "netcdf":
