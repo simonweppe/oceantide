@@ -58,12 +58,12 @@ def read_otis_binary(filename=None, gfile=None, hfile=None, ufile=None):
     dset = xr.Dataset(
         coords={
             "con": cons,
-            "lon_z": lon_z,
             "lat_z": lat_z,
-            "lon_u": lon_u,
+            "lon_z": lon_z,
             "lat_u": lat_u,
-            "lon_v": lon_v,
+            "lon_u": lon_u,
             "lat_v": lat_v,
+            "lon_v": lon_v,
         },
     )
 
