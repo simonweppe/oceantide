@@ -1,7 +1,7 @@
 """Read Oceantide file format."""
 import xarray as xr
 
-from oceantide.tide import Tide
+from oceantide import Tide
 
 
 def read_oceantide(filename=None, zarr_kwargs={"consolidated": True}):

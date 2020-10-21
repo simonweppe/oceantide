@@ -3,7 +3,7 @@ import os
 import xarray as xr
 
 from oceantide.core.otis import from_otis, otis_filenames
-from oceantide.tide import Tide
+from oceantide import Tide
 
 
 def read_otis_netcdf(filename=None, gfile=None, hfile=None, ufile=None):

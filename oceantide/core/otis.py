@@ -14,8 +14,7 @@ import os
 import re
 import numpy as np
 
-from oceantide.input import read_dataset
-from oceantide.tide import Tide
+from oceantide import Tide
 
 
 def from_otis(dset):

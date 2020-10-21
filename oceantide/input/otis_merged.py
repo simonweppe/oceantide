@@ -1,7 +1,7 @@
 """Read Otis custom merged netcdf file format."""
 from oceantide.core.otis import from_otis
-from oceantide.input import read_dataset
-from oceantide.tide import Tide
+from oceantide.core.utils import read_netcdf_or_zarr
+from oceantide import Tide
 
 
 def read_otis_merged(filename, file_format="netcdf"):
@@ -43,5 +43,5 @@ def read_otis_merged(filename, file_format="netcdf"):
         vRe      (con, lat_v, lon_v) float32 ...
 
     """
-    dset = read_dataset(filename, file_format=file_format)
+    dset = read_netcdf_or_zarr(filename, file_format=file_format)
     return from_otis(dset)
