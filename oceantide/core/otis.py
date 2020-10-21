@@ -272,7 +272,7 @@ class Otis:
         }
         self.ds.vt.attrs = {
             "standard_name": "tidal_ns_velocity_complex_amplitude",
-            "units": "m",
+            "units": "m s-1",
         }
         self.ds.con.attrs = {"standard_name": "tidal_constituent", "units": ""}
         self.ds.lat.attrs = {"standard_name": "latitude", "units": "degrees_north"}
