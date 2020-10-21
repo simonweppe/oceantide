@@ -71,8 +71,10 @@ class Tide:
         if len(set(vars_dims)) != 1:
             raise ValueError(f"Variables {required_vars} must share a common grid.")
 
-        if self._obj.con.dtype != np.dtype("<U2"):
-            raise ValueError(f"Coordinate `con` must be <U2 dtype, found {self._obj.con.dtype}")
+        if self._obj.con.dtype.kind != "U":
+            raise ValueError(
+                f"`con` must be Unicode string dtype, found {self._obj.con.dtype}"
+            )
 
     def predict(self, times, time_chunk=50):
         """Predict tide timeseries.
