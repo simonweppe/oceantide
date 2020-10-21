@@ -38,14 +38,15 @@ def otis_filenames(filename):
     """
     with open(filename) as stream:
         files = stream.read().split()
+    dirname = os.path.dirname(filename)
     gfile = ufile = hfile = None
     for f in files:
         if f.startswith("g"):
-            gfile = os.path.basename(f)
+            gfile = os.path.join(dirname, os.path.basename(f))
         elif f.startswith("u"):
-            ufile = os.path.basename(f)
+            ufile = os.path.join(dirname, os.path.basename(f))
         elif f.startswith("h"):
-            hfile = os.path.basename(f)
+            hfile = os.path.join(dirname, os.path.basename(f))
     assert gfile, f"Cannot identify gfile from {filename} ({files})"
     assert hfile, f"Cannot identify hfile from {filename} ({files})"
     assert ufile, f"Cannot identify ufile from {filename} ({files})"
