@@ -1,0 +1,9 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "con",
+        "lat",
+        "lon"
+    ],
+    "standard_name": "tidal_we_velocity_complex_amplitude",
+    "units": "m"
+}

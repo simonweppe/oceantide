@@ -5,7 +5,7 @@ import datetime
 import xarray as xr
 
 from oceantide import Tide
-from oceantide import read_otis_merged, read_otis_netcdf, read_otis_binary
+from oceantide import read_otis_merged, read_otis_netcdf, read_otis_binary, read_oceantide
 
 
 FILES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_files")
@@ -57,3 +57,7 @@ def test_otis_netcdf_correct_args():
             hfile=os.path.join(FILES_DIR, "otis_netcdf/hf.test.nc"),
             ufile=os.path.join(FILES_DIR, "otis_netcdf/uv.test.nc"),
         )
+
+
+def test_read_oceantide():
+    read_oceantide(os.path.join(FILES_DIR, "oceantide.zarr"))
