@@ -3,6 +3,7 @@ import re
 import datetime
 import numpy as np
 import dask.array as da
+import pandas as pd
 import xarray as xr
 
 from oceantide.core.utils import nodal
@@ -98,8 +99,9 @@ class Tide:
         omega = xr.DataArray(
             data=[OMEGA[c] for c in conlist], coords={"con": conlist}, dims=("con",)
         )
+        seconds_array = pd.array(times).astype(int) / 1e9 - 694224000.0
         tsec = xr.DataArray(
-            data=[(t - datetime.datetime(1992, 1, 1)).total_seconds() for t in times],
+            data=seconds_array,
             coords={"time": times},
             dims=("time",),
         ).chunk({"time": time_chunk})
