@@ -88,6 +88,8 @@ class Tide:
             Dataset of tide currents and elevations timeseries.
 
         """
+        if isinstance(times, xr.DataArray):
+            times = times.to_index().to_pydatetime()
         conlist = list(self._obj.con.values)
 
         pu, pf, v0u = nodal(self._nodal_time(times[0]), conlist)
