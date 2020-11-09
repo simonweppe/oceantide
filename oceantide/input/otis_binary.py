@@ -11,7 +11,7 @@ from oceantide.core.otis import (
     read_otis_bin_h,
     read_otis_bin_uv,
 )
-from oceantide import Tide
+from oceantide.tide import Tide
 
 
 def read_otis_binary(filename=None, gfile=None, hfile=None, ufile=None):

@@ -1,7 +1,7 @@
 """Read Otis custom merged netcdf file format."""
 from oceantide.core.otis import from_otis
 from oceantide.core.utils import read_netcdf_or_zarr
-from oceantide import Tide
+from oceantide.tide import Tide
 
 
 def read_otis_merged(filename, file_format="netcdf"):

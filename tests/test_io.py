@@ -4,7 +4,7 @@ import pytest
 import datetime
 import xarray as xr
 
-from oceantide import Tide
+from oceantide.tide import Tide
 from oceantide import read_otis_merged, read_otis_netcdf, read_otis_binary, read_oceantide, read_dataset
 
 

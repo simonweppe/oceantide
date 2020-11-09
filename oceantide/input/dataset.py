@@ -1,6 +1,6 @@
 """Infer dataset format to use appropriate reader."""
 from oceantide.core.otis import from_otis
-from oceantide import Tide
+from oceantide.tide import Tide
 
 
 def read_dataset(dset):
