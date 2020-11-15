@@ -1,5 +1,6 @@
 """Read Oceantide file format."""
 import xarray as xr
+from fsspec import get_mapper
 
 from oceantide.tide import Tide
 
@@ -31,4 +32,5 @@ def read_oceantide(filename=None, zarr_kwargs={"consolidated": True}):
         vt       (con, lat, lon) complex128 dask.array<chunksize=(3, 126, 241), meta=np.ndarray>
 
     """
-    return xr.open_zarr(filename, consolidated=True)
+    fsmap = get_mapper(filename)
+    return xr.open_zarr(fsmap, consolidated=True)
