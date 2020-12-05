@@ -26,18 +26,21 @@ class Tide:
         dset.attrs = {
             "description": "Tide elevation and currents prediction time series",
         }
-        dset["et"].attrs = {
-            "standard_name": "tidal_sea_surface_height_above_mean_sea_level",
-            "units": "m",
-        }
-        dset["ut"].attrs = {
-            "standard_name": "eastward_sea_water_velocity_due_to_tides",
-            "units": "m s-1",
-        }
-        dset["vt"].attrs = {
-            "standard_name": "northward_sea_water_velocity_due_to_tides",
-            "units": "m s-1",
-        }
+        if "et" in dset.data_vars:
+            dset["et"].attrs = {
+                "standard_name": "tidal_sea_surface_height_above_mean_sea_level",
+                "units": "m",
+            }
+        if "ut" in dset.data_vars:
+            dset["ut"].attrs = {
+                "standard_name": "eastward_sea_water_velocity_due_to_tides",
+                "units": "m s-1",
+            }
+        if "vt" in dset.data_vars:
+            dset["vt"].attrs = {
+                "standard_name": "northward_sea_water_velocity_due_to_tides",
+                "units": "m s-1",
+            }
         return dset
 
     def _nodal_time(self, time):
@@ -77,17 +80,21 @@ class Tide:
                 f"`con` must be Unicode string dtype, found {self._obj.con.dtype}"
             )
 
-    def predict(self, times, time_chunk=50):
+    def predict(self, times, time_chunk=50, tide_vars=["et", "ut", "vt"]):
         """Predict tide timeseries.
 
         Args:
             time (arr): Array of datetime objects to predict tide over.
             time_chunk (float): Time chunk size so that computation fit into memory.
+            tide_vars (list): Tide variables to predict.
 
         Returns:
-            Dataset of tide currents and elevations timeseries.
+            Dataset predicted tide timeseries components specified in tide_vars.
 
         """
+        if not tide_vars:
+            raise ValueError("Choose at least one tide variable to predict")
+
         if isinstance(times, xr.DataArray):
             times = times.to_index().to_pydatetime()
         conlist = list(self._obj.con.values)
@@ -112,9 +119,12 @@ class Tide:
         sin = da.sin(tsec * omega + v0u + pu)
 
         dsout = xr.Dataset()
-        dsout["et"] = cos * pf * self._obj["et"].real - sin * pf * self._obj["et"].imag
-        dsout["ut"] = cos * pf * self._obj["ut"].real - sin * pf * self._obj["ut"].imag
-        dsout["vt"] = cos * pf * self._obj["vt"].real - sin * pf * self._obj["vt"].imag
+        if "et" in tide_vars:
+            dsout["et"] = cos * pf * self._obj["et"].real - sin * pf * self._obj["et"].imag
+        if "ut" in tide_vars:
+            dsout["ut"] = cos * pf * self._obj["ut"].real - sin * pf * self._obj["ut"].imag
+        if "vt" in tide_vars:
+            dsout["vt"] = cos * pf * self._obj["vt"].real - sin * pf * self._obj["vt"].imag
         dsout = dsout.sum(dim="con", skipna=False)
         dsout = self._set_attributes_output(dsout)
 
