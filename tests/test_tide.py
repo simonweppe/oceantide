@@ -35,3 +35,18 @@ def test_predict(dset, computed_dset):
     times = [datetime.datetime(2001, 1, 1, H) for H in range(6)]
     eta = dset.tide.predict(times)
     assert eta.equals(computed_dset)
+
+def test_predict_elevation_only(dset):
+    times = [datetime.datetime(2001, 1, 1, H) for H in range(6)]
+    eta = dset.tide.predict(times, tide_vars=["et"])
+    assert "ut" not in eta and "vt" not in eta and "et" in eta
+
+def test_predict_current_only(dset):
+    times = [datetime.datetime(2001, 1, 1, H) for H in range(6)]
+    eta = dset.tide.predict(times, tide_vars=["ut", "vt"])
+    assert "et" not in eta and "ut" in eta and "vt" in eta
+
+def test_always_predict_something(dset):
+    times = [datetime.datetime(2001, 1, 1, H) for H in range(6)]
+    with pytest.raises(ValueError):
+        dset.tide.predict(times, tide_vars=[])
