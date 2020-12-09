@@ -84,7 +84,7 @@ class Tide:
         """Predict tide timeseries.
 
         Args:
-            time (arr): Array of datetime objects to predict tide over.
+            times (arr): Array of datetime objects or DataArray of times to predict tide over. If an array, a new times dimension will be created.
             time_chunk (float): Time chunk size so that computation fit into memory.
             tide_vars (list): Tide variables to predict.
 
@@ -95,11 +95,21 @@ class Tide:
         if not tide_vars:
             raise ValueError("Choose at least one tide variable to predict")
 
-        if isinstance(times, xr.DataArray):
-            times = times.to_index().to_pydatetime()
         conlist = list(self._obj.con.values)
 
-        pu, pf, v0u = nodal(self._nodal_time(times[0]), conlist)
+        if isinstance(times,np.ndarray) or isinstance(times,list):
+            seconds_array = pd.array(times).astype(int) / 1e9 - 694224000
+            tsec = xr.DataArray(
+                data=seconds_array,
+                coords={"time": times},
+                dims=("time",),
+            ).chunk({"time": time_chunk})
+        elif isinstance(times,xr.DataArray):
+            tsec = times.astype(int) / 1e9 - 694224000
+        else:
+            raise TypeError("times argument must be a list of datetimes, numpy array of datetime64, or xarray DataArray of datetime64")
+
+        pu, pf, v0u = nodal(tsec[0]/86400+ 48622.0, conlist)
 
         # Variables for calculations
         pf = xr.DataArray(pf, coords={"con": conlist}, dims=("con",))
@@ -108,12 +118,6 @@ class Tide:
         omega = xr.DataArray(
             data=[OMEGA[c] for c in conlist], coords={"con": conlist}, dims=("con",)
         )
-        seconds_array = pd.array(times).astype(int) / 1e9 - 694224000.0
-        tsec = xr.DataArray(
-            data=seconds_array,
-            coords={"time": times},
-            dims=("time",),
-        ).chunk({"time": time_chunk})
 
         cos = da.cos(tsec * omega + v0u + pu)
         sin = da.sin(tsec * omega + v0u + pu)
