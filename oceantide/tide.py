@@ -43,15 +43,6 @@ class Tide:
             }
         return dset
 
-    def _nodal_time(self, time):
-        """Nodal time.
-
-        Args:
-            time (datetime): Time to get nodal time from.
-
-        """
-        return (time - datetime.datetime(1992, 1, 1)).days + 48622.0
-
     def _validate(self):
         """Check if dataset object has already been constructed.
 
