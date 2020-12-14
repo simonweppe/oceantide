@@ -95,12 +95,15 @@ class Tide:
                 coords={"time": times},
                 dims=("time",),
             ).chunk({"time": time_chunk})
-        elif isinstance(times,xr.DataArray):
+        elif isinstance(times, xr.DataArray):
             tsec = times.astype(int) / 1e9 - 694224000
         else:
-            raise TypeError("times argument must be a list of datetimes, numpy array of datetime64, or xarray DataArray of datetime64")
+            raise TypeError(
+                "times argument must be a list of datetimes, pandas.DatetimeIndex, "
+                "numpy array of datetime64 or xarray DataArray of datetime64"
+            )
 
-        pu, pf, v0u = nodal(tsec[0]/86400+ 48622.0, conlist)
+        pu, pf, v0u = nodal(tsec[0] / 86400 + 48622.0, conlist)
 
         # Variables for calculations
         pf = xr.DataArray(pf, coords={"con": conlist}, dims=("con",))
@@ -115,11 +118,17 @@ class Tide:
 
         dsout = xr.Dataset()
         if "et" in tide_vars:
-            dsout["et"] = cos * pf * self._obj["et"].real - sin * pf * self._obj["et"].imag
+            dsout["et"] = (
+                cos * pf * self._obj["et"].real - sin * pf * self._obj["et"].imag
+            )
         if "ut" in tide_vars:
-            dsout["ut"] = cos * pf * self._obj["ut"].real - sin * pf * self._obj["ut"].imag
+            dsout["ut"] = (
+                cos * pf * self._obj["ut"].real - sin * pf * self._obj["ut"].imag
+            )
         if "vt" in tide_vars:
-            dsout["vt"] = cos * pf * self._obj["vt"].real - sin * pf * self._obj["vt"].imag
+            dsout["vt"] = (
+                cos * pf * self._obj["vt"].real - sin * pf * self._obj["vt"].imag
+            )
         dsout = dsout.sum(dim="con", skipna=False)
         dsout = self._set_attributes_output(dsout)
 

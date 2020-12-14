@@ -5,7 +5,13 @@ import datetime
 import xarray as xr
 
 from oceantide.tide import Tide
-from oceantide import read_otis_merged, read_otis_netcdf, read_otis_binary, read_oceantide, read_dataset
+from oceantide import (
+    read_otis_merged,
+    read_otis_netcdf,
+    read_otis_binary,
+    read_oceantide,
+    read_dataset,
+)
 
 
 FILES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_files")
@@ -69,4 +75,4 @@ def test_read_dataset():
         xr.open_zarr(os.path.join(FILES_DIR, "oceantide.zarr"), consolidated=True),
     ]
     for dset in dsets:
-        read_dataset(dset)    
+        read_dataset(dset)
