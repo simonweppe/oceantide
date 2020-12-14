@@ -88,7 +88,7 @@ class Tide:
 
         conlist = list(self._obj.con.values)
 
-        if isinstance(times,np.ndarray) or isinstance(times,list):
+        if isinstance(times, (list, tuple, np.ndarray, pd.DatetimeIndex)):
             seconds_array = pd.array(times).astype(int) / 1e9 - 694224000
             tsec = xr.DataArray(
                 data=seconds_array,
