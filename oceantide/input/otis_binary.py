@@ -37,6 +37,35 @@ def read_otis_binary(filename=None, gfile=None, hfile=None, ufile=None):
             (`gfile`, `hfile` and `ufile`).
 
     """
+    dset = read_otis_binary_as_otis_merged(
+        filename=filename, gfile=gfile, hfile=hfile, ufile=ufile
+    )
+    return from_otis(dset)
+
+
+def read_otis_binary_as_otis_merged(filename=None, gfile=None, hfile=None, ufile=None):
+    """Read Otis binary file format and returns an Otis merged dataset.
+
+    Args:
+        filename (str): Name of `Model_*` metadata file specifying other files to read.
+        gfile (str): Name of grid file to read, by default defined from `filename`.
+        hfile (str): Name of elevation file to read, by default defined from `filename`.
+        ufile (str): Name of currents file to read, by default defined from `filename`.
+
+    Returns:
+        Dataset in Otis merged format
+
+    Note:
+        Otis data are provided in 4 separate files:
+        * Meta file named as `Model_*` specifyig the 3 data files to read.
+        * Grid file named as `grid*` with grid information and model depths.
+        * Elevation file named as `h*.` with elevation constituents data.
+        * Transport file named as `uv.` with transport constituents data.
+        The path of the three data files can be prescribed either by specifying the
+            meta file path (`filename`) or by explicitly providing their path
+            (`gfile`, `hfile` and `ufile`).
+
+    """
     if filename is not None:
         _gfile, _hfile, _ufile = otis_filenames(filename)
     else:
@@ -88,7 +117,6 @@ def read_otis_binary(filename=None, gfile=None, hfile=None, ufile=None):
     dset["vIm"] = dset["VIm"] / dset["hv"]
 
     dset = dset.where(dset < 1e10)
-    dset = from_otis(dset)
 
     return dset
 
