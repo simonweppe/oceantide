@@ -251,9 +251,8 @@ class Otis:
 
     def _format_cons(self):
         """Format constituents coordinates."""
-        self.ds = self.ds.assign_coords(
-            {"con": [c.upper() for c in self.ds.con.values.tobytes().decode().split()]}
-        )
+        decoded = [c.upper() for c in self.ds.con.values.tobytes().decode().split()]
+        self.ds = self.ds.assign_coords({"con": np.array(decoded).astype("U4")})
 
     def _set_attributes(self):
         """Define attributes for formatted dataset."""
