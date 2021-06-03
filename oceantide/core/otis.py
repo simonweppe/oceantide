@@ -40,11 +40,11 @@ def otis_filenames(filename):
     dirname = os.path.dirname(filename)
     gfile = ufile = hfile = None
     for f in files:
-        if os.path.split(f)[-1].startswith("g"):
+        if os.path.split(f)[-1].lower().startswith("g"):
             gfile = os.path.join(dirname, os.path.basename(f))
-        elif os.path.split(f)[-1].startswith("u"):
+        elif os.path.split(f)[-1].lower().startswith("u"):
             ufile = os.path.join(dirname, os.path.basename(f))
-        elif os.path.split(f)[-1].startswith("h"):
+        elif os.path.split(f)[-1].lower().startswith("h"):
             hfile = os.path.join(dirname, os.path.basename(f))
     assert gfile, f"Cannot identify gfile from {filename} ({files})"
     assert hfile, f"Cannot identify hfile from {filename} ({files})"
