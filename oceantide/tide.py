@@ -71,6 +71,96 @@ class Tide:
                 f"`con` must be Unicode string dtype, found {self._obj.con.dtype}"
             )
 
+    @property
+    def eamp(self):
+        """Tidal elevation amplitude.
+
+        :math:`\\lambda=\\sqrt{\\Re(z)+\\Im(z)}`
+
+        """
+        darr = np.absolute(self._obj["et"])
+        darr.attrs = {
+            "standard_name": "sea_surface_height_amplitude_due_to_geocentric_ocean_tide",
+            "long_name": "Tidal elevation amplitude",
+            "units": "m",
+        }
+        return darr
+
+    @property
+    def ephi(self):
+        """Tidal elevation phase.
+
+        :math:`\\lambda=\\sqrt{\\Re(z)+\\Im(z)}`
+
+        """
+        darr = 360 - (xr.ufuncs.angle(self._obj["et"], deg=True)) % 360
+        darr.attrs = {
+            "standard_name": "sea_surface_height_phase_due_to_geocentric_ocean_tide",
+            "long_name": "Tidal elevation phase",
+            "units": "degree",
+        }
+        return darr
+
+    @property
+    def uamp(self):
+        """Tidal eastward velocity amplitude.
+
+        :math:`\\lambda=\\sqrt{\\Re(u)+\\Im(u)}`
+
+        """
+        darr = np.absolute(self._obj["ut"])
+        darr.attrs = {
+            "standard_name": "eastward_sea_water_velocity_amplitude_due_to_tides",
+            "long_name": "Tidal eastward velocity amplitude",
+            "units": "m s-1",
+        }
+        return darr
+
+    @property
+    def uphi(self):
+        """Tidal elevation phase.
+
+        :math:`\\lambda=\\sqrt{\\Re(z)+\\Im(z)}`
+
+        """
+        darr = 360 - (xr.ufuncs.angle(self._obj["ut"], deg=True)) % 360
+        darr.attrs = {
+            "standard_name": "eastward_sea_water_velocity_phase_due_to_tides",
+            "long_name": "Tidal eastward velocity phase",
+            "units": "degree",
+        }
+        return darr
+
+    @property
+    def vu(self):
+        """Tidal SN velocity amplitude.
+
+        :math:`\\lambda=\\sqrt{\\Re(v)+\\Im(v)}`
+
+        """
+        darr = np.absolute(self._obj["vt"])
+        darr.attrs = {
+            "standard_name": "northward_sea_water_velocity_amplitude_due_to_tides",
+            "long_name": "Tidal northward velocity amplitude",
+            "units": "m s-1",
+        }
+        return darr
+
+    @property
+    def vphi(self):
+        """Tidal elevation phase.
+
+        :math:`\\lambda=\\sqrt{\\Re(z)+\\Im(z)}`
+
+        """
+        darr = 360 - (xr.ufuncs.angle(self._obj["vt"], deg=True)) % 360
+        darr.attrs = {
+            "standard_name": "northward_sea_water_velocity_phase_due_to_tides",
+            "long_name": "Tidal northward velocity phase",
+            "units": "degree",
+        }
+        return darr
+
     def predict(self, times, time_chunk=50, tide_vars=["et", "ut", "vt"]):
         """Predict tide timeseries.
 
