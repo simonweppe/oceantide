@@ -178,3 +178,38 @@ def read_netcdf_or_zarr(filename_or_fileglob, file_format):
     else:
         raise ValueError("file_format must be one of ('netcdf', 'zarr')")
     return dset
+
+
+def arakawa_grid(nx, ny, x0, x1, y0, y1, variable):
+    """Arakawa grid coordinates for variable.
+
+    Args:
+        nx (int): Number of grid point along the x direction.
+        ny (int): Number of grid point along the y direction.
+        x0 (float): Left limit (degrees).
+        x1 (float): Right limit (degrees).
+        y0 (float): Bottom limit (degrees).
+        y1 (float): Left limit (degrees).
+        variable (str): Model variable, one of 'h', 'u', 'v'.
+
+    Returns:
+        lon (1darray): Longitude coordinates in Arakawa grid for variable.
+        lat (1darray): Latitude coordinates in Arakawa for variable.
+
+    """
+    dx = (x1 - x0) / nx
+    dy = (y1 - y0) / ny
+    xcorner = np.clip(np.arange(x0, x1, dx), x0, x1)[0 : nx]
+    ycorner = np.clip(np.arange(y0, y1, dy), y0, y1)[0 : ny]
+    if variable == "h":
+        lon = xcorner + dx / 2
+        lat = ycorner + dy / 2
+    elif variable == "u":
+        lon = xcorner
+        lat = ycorner + dy / 2
+    elif variable == "v":
+        lon = xcorner + dx / 2
+        lat = ycorner
+    else:
+        raise ValueError(f"'variable' must be one of 'h', 'u', 'v', got {variable}")
+    return lon, lat
