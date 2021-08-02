@@ -295,28 +295,28 @@ def write_otis_bin_h(hfile, hRe, hIm, con, lon, lat):
     """Write elevation constituents data into otis binary file.
 
     Args:
-        - hfile (str): Name of elevation constituents binary file to write.
-        - hRe (DataArray, ndarray): Real component of h :math:`h_{Re}(nc,nx,ny)`.
-        - hIm (DataArray, ndarray): Imag component of h :math:`h_{Im}(nc,nx,ny)`.
+        - hfile (str): Name of elevation binary constituents file to write.
+        - hRe (DataArray, 3darray): Real elevation component :math:`\\Re{h}(nc,nx,ny)`.
+        - hIm (DataArray, 3darray): Imag elevation component :math:`\\Im{h}(nc,nx,ny)`.
         - con (1darray): Constituents to write.
-        - lon (DataArray, 3darray): Longitude coordinates.
-        - lat (DataArray, 3darray): Latitude coordinates.
+        - lon (DataArray, 1darray): Longitude coordinates.
+        - lat (DataArray, 1darray): Latitude coordinates.
 
     Note:
+        - Arrays must have shape consistent with Otis convention :math:`(nc,nx,ny)`.
         - lon and lat can be 1d or 2d arrays.
-
-    TODO: Avoid transposing.
 
     """
     nc, nx, ny = hRe.shape
-    hRe = hRe.transpose("nc", "ny", "nx")
-    hIm = hIm.transpose("nc", "ny", "nx")
 
+    # Standarise coordinates
+    con = con.astype("S")
     if lon.ndim > 1:
         lon = lon[:, 0]
     if lat.ndim > 1:
         lat = lat[0, :]
 
+    # Header variables
     dx = lon[1] - lon[0]
     dy = lat[1] - lat[0]
     x0 = float(lon[0] - dx / 2)
@@ -334,13 +334,14 @@ def write_otis_bin_h(hfile, hRe, hIm, con, lon, lat):
         theta_lim.tofile(fid)
         con.values.astype("S4").tofile(fid)
         np.array(4 * (nc + 7), dtype=">i4").tofile(fid)
+
         # Records
         constituent_header = np.array(8 * nx * ny, dtype=">i4")
         for ic in range(nc):
             constituent_header.tofile(fid)
             data = np.zeros((ny, nx * 2))
-            data[:, 0 : 2 * nx - 1 : 2] = hRe[ic]
-            data[:, 1 : 2 * nx : 2] = hIm[ic]
+            data[:, 0 : 2 * nx - 1 : 2] = hRe[ic].T
+            data[:, 1 : 2 * nx : 2] = hIm[ic].T
             data.astype(">f4").tofile(fid)
             constituent_header.tofile(fid)
 
