@@ -1,12 +1,14 @@
-# -*- coding: utf-8 -*-
-
 """Core tools for tidal analysis and prediction."""
+from pathlib import Path
+import yaml
 import numpy as np
 import xarray as xr
 from fsspec import get_mapper
 
 from oceantide.constituents import V0U
 
+
+HERE = Path(__file__).parent
 
 
 def nodal(time, con):
@@ -213,3 +215,20 @@ def arakawa_grid(nx, ny, x0, x1, y0, y1, variable):
     else:
         raise ValueError(f"'variable' must be one of 'h', 'u', 'v', got {variable}")
     return lon, lat
+
+
+def set_attributes(dset, dataset_type):
+    """Set variable attributes for variables from given dataset type.
+
+    Args:
+        dset (Dataset): Dataset to set attributes from.docs
+        dataset_type (str): Dataset type, e.g., 'otis'.
+
+    """
+    all_attrs = yaml.load(open(HERE / "attributes.yml"), Loader=yaml.Loader)
+    for varname, darr in dset.variables.items():
+        darr.attrs.update(all_attrs.get(dataset_type).get(varname, {}))
+
+
+# if __name__ == "__main__":
+#     set_attributes("otis", "hRe")

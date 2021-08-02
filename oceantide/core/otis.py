@@ -17,7 +17,7 @@ import dask.array as da
 import xarray as xr
 
 from oceantide.tide import Tide
-from oceantide.core.utils import arakawa_grid
+from oceantide.core.utils import arakawa_grid, set_attributes
 
 
 CHAR = np.dtype(">c")
@@ -70,6 +70,10 @@ def read_otis_bin_u(ufile):
             - UIm: Imag component of U :math:`U_{Im}(con,lat_u,lon_u)`.
             - VRe: Real component of V :math:`V_{Re}(con,lat_v,lon_v)`.
             - VIm: Imag component of V :math:`V_{Im}(con,lat_v,lon_v)`.
+            - ua: Tidal eastern velocity amplitude :math:`A_{u}(con,lat_v,lon_v)`.
+            - up: Tidal eastern velocity phase :math:`\phi_{u}(con,lat_v,lon_v)`.
+            - va: Tidal northern velocity amplitude :math:`A_{v}(con,lat_v,lon_v)`.
+            - vp: Tidal northern velocity phase :math:`\phi_{v}(con,lat_v,lon_v)`.
 
     """
     with open(ufile, "rb") as f:
@@ -129,6 +133,7 @@ def read_otis_bin_u(ufile):
     dset["vp"] = (360 - xr.ufuncs.angle(c, deg=True)) % 360
 
     # Attributes
+    set_attributes(dset, "otis")
     dset.attrs = {
         "type": "OTIS tidal transport file",
         "title": "Oceantide tidal transport/current from binary file"
@@ -147,6 +152,8 @@ def read_otis_bin_h(hfile):
         - dset (Dataset): Elevation constituents grid with variables:
             - hRe: Real component of h :math:`h_{Re}(con,lat_z,lon_z)`.
             - hIm: Imag component of h :math:`h_{Im}(con,lat_z,lon_z)`.
+            - ha: Tidal elevation amplitude :math:`A_{u}(con,lat_v,lon_v)`.
+            - hp: Tidal elevation phase :math:`\phi_{u}(con,lat_v,lon_v)`.
 
     """
     with open(hfile, "rb") as f:
@@ -191,6 +198,7 @@ def read_otis_bin_h(hfile):
     dset["hp"] = (360 - xr.ufuncs.angle(c, deg=True)) % 360
 
     # Attributes
+    set_attributes(dset, "otis")
     dset.attrs = {
         "type": "OTIS tidal elevation file",
         "title": "Oceantide tidal elevation from binary file"
@@ -264,6 +272,13 @@ def read_otis_bin_grid(gfile):
     dset["lat_z"] = xr.DataArray(da.from_array(lat_z), dims=("nx", "ny"))
     dset["hz"] = xr.DataArray(da.from_array(hz), dims=("nx", "ny"))
     dset["mz"] = xr.DataArray(da.from_array(mz), dims=("nx", "ny"))
+
+    # Attributes
+    set_attributes(dset, "otis")
+    dset.attrs = {
+        "type": "OTIS Arakawa C-grid file",
+        "title": "Oceantide bathymetry from binary file"
+    }
 
     return dset
 
