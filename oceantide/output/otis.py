@@ -5,17 +5,32 @@ import numpy as np
 from oceantide.core.otis import write_otis_bin_h
 
 
-def to_otis(dset, dirname, hfile=None, ufile=None, gfile=None):
-    """Write dataset as Otis binary format."""
-    if hfile is not None:
-        hfile = Path(dirname) / hfile
+def to_otis(dset, dirname, suffix="otis", hfile=True, ufile=True, gfile=True):
+    """Write dataset as Otis binary format.
+
+    Args:
+        dset (Oceantide Dataset):
+        dirname (str): Directory to save binary files.
+        suffix (str): Suffix to define file names.
+        hfile (bool): Save tidal elevation binary file.
+        ufile (bool): Save tidal transports binary file.
+        gfile (bool): Save grid file.
+
+    """
+    if hfile:
         write_otis_bin_h(
-            hfile, dset.et.real, dset.et.imag, dset.con, dset.lon, dset.lat
+            hfile=Path(dirname) / f"h_{suffix}",
+            hRe=dset.et.real,
+            hIm=dset.et.imag,
+            con=dset.con,
+            lon=dset.lon,
+            lat=dset.lat,
         )
 
 
 if __name__ == "__main__":
     import filecmp
+    import datetime
     import xarray as xr
     from oceantide.core.otis import read_otis_bin_h, write_otis_bin_h
 
@@ -59,18 +74,22 @@ if __name__ == "__main__":
         ll_1, nx_1, ny_1, nc_1 = np.fromfile(f, dtype=np.int32, count=4).byteswap(True)
         y0_1, y1_1, x0_1, x1_1 = np.fromfile(f, dtype=np.float32, count=4).byteswap(True)
 
-    print(f"ll: {ll_1}")
-    print(f"nx: {nx_1}")
-    print(f"ny: {ny_1}")
-    print(f"nc: {nc_1}")
-    print(f"x0: {x0_1}")
-    print(f"x1: {x1_1}")
-    print(f"x0: {y0_1}")
-    print(f"x0: {y1_1}")
+    # print(f"ll: {ll_1}")
+    # print(f"nx: {nx_1}")
+    # print(f"ny: {ny_1}")
+    # print(f"nc: {nc_1}")
+    # print(f"x0: {x0_1}")
+    # print(f"x1: {x1_1}")
+    # print(f"x0: {y0_1}")
+    # print(f"x0: {y1_1}")
 
     # Compare with new function
-    ds2 = ds.transpose("nc", "nx", "ny")
-    write_otis_bin_h("file2", ds2.hRe, ds2.hIm, ds2.con, ds2.lon_z, ds2.lat_z)
+
+    then = datetime.datetime.now()
+    write_otis_bin_h("file2", ds.hRe, ds.hIm, ds.con, ds.lon_z, ds.lat_z)
+    now = datetime.datetime.now()
+    elapsed = (now - then).total_seconds()
+    print(f"Elapsed: {elapsed:0.0f}s")
 
     print(f'Same file: {filecmp.cmp("file1", "file2", shallow=False)}')
 
