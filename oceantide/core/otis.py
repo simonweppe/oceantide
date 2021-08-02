@@ -66,14 +66,16 @@ def read_otis_bin_u(ufile):
 
     Returns:
         - dset (Dataset): Transport constituents grid with variables:
-            - URe: Real component of U :math:`U_{Re}(con,lat_u,lon_u)`.
-            - UIm: Imag component of U :math:`U_{Im}(con,lat_u,lon_u)`.
-            - VRe: Real component of V :math:`V_{Re}(con,lat_v,lon_v)`.
-            - VIm: Imag component of V :math:`V_{Im}(con,lat_v,lon_v)`.
-            - ua: Tidal eastern velocity amplitude :math:`A_{u}(con,lat_v,lon_v)`.
-            - up: Tidal eastern velocity phase :math:`\phi_{u}(con,lat_v,lon_v)`.
-            - va: Tidal northern velocity amplitude :math:`A_{v}(con,lat_v,lon_v)`.
-            - vp: Tidal northern velocity phase :math:`\phi_{v}(con,lat_v,lon_v)`.
+            - URe: Real component of U :math:`U_{Re}(nc,nx,ny)`.
+            - UIm: Imag component of U :math:`U_{Im}(nc,nx,ny)`.
+            - VRe: Real component of V :math:`V_{Re}(nc,nx,ny)`.
+            - VIm: Imag component of V :math:`V_{Im}(nc,nx,ny)`.
+            - ua: Tidal eastern velocity amplitude :math:`A_{u}(nc,nx,ny)`.
+            - up: Tidal eastern velocity phase :math:`\phi_{u}(nc,nx,ny)`.
+            - va: Tidal northern velocity amplitude :math:`A_{v}(nc,nx,ny)`.
+            - vp: Tidal northern velocity phase :math:`\phi_{v}(nc,nx,ny)`.
+
+    TODO: Avoid transposing.
 
     """
     with open(ufile, "rb") as f:
@@ -150,10 +152,12 @@ def read_otis_bin_h(hfile):
 
     Returns:
         - dset (Dataset): Elevation constituents grid with variables:
-            - hRe: Real component of h :math:`h_{Re}(con,lat_z,lon_z)`.
-            - hIm: Imag component of h :math:`h_{Im}(con,lat_z,lon_z)`.
-            - ha: Tidal elevation amplitude :math:`A_{u}(con,lat_v,lon_v)`.
-            - hp: Tidal elevation phase :math:`\phi_{u}(con,lat_v,lon_v)`.
+            - hRe: Real component of h :math:`h_{Re}(nc,nx,ny)`.
+            - hIm: Imag component of h :math:`h_{Im}(nc,nx,ny)`.
+            - ha: Tidal elevation amplitude :math:`A_{u}(nc,nx,ny)`.
+            - hp: Tidal elevation phase :math:`\phi_{u}(nc,nx,ny)`.
+
+    TODO: Avoid transposing.
 
     """
     with open(hfile, "rb") as f:
@@ -216,6 +220,8 @@ def read_otis_bin_cons(hfile):
     Returns:
         - cons (array 1d): Constituents with '|S4' dtype.
 
+    TODO: Deprecate.
+
     """
     with open(hfile, "rb") as f:
         __, __, __, nc = np.fromfile(f, dtype=np.int32, count=4).byteswap(True)
@@ -235,6 +241,8 @@ def read_otis_bin_grid(gfile):
         - dset (Dataset): Grid with variables:
             - hz:  Depth :math:`hz(lat_z,lon_z)`.
             - mz: Mask :math:`mz(lat_z,lon_z)`.
+
+    TODO: Avoid transposing.
 
     """
     with open(gfile, "rb") as f:
@@ -281,6 +289,60 @@ def read_otis_bin_grid(gfile):
     }
 
     return dset
+
+
+def write_otis_bin_h(hfile, hRe, hIm, con, lon, lat):
+    """Write elevation constituents data into otis binary file.
+
+    Args:
+        - hfile (str): Name of elevation constituents binary file to write.
+        - hRe (DataArray, ndarray): Real component of h :math:`h_{Re}(nc,nx,ny)`.
+        - hIm (DataArray, ndarray): Imag component of h :math:`h_{Im}(nc,nx,ny)`.
+        - con (1darray): Constituents to write.
+        - lon (DataArray, 3darray): Longitude coordinates.
+        - lat (DataArray, 3darray): Latitude coordinates.
+
+    Note:
+        - lon and lat can be 1d or 2d arrays.
+
+    TODO: Avoid transposing.
+
+    """
+    nc, nx, ny = hRe.shape
+    hRe = hRe.transpose("nc", "ny", "nx")
+    hIm = hIm.transpose("nc", "ny", "nx")
+
+    if lon.ndim > 1:
+        lon = lon[:, 0]
+    if lat.ndim > 1:
+        lat = lat[0, :]
+
+    dx = lon[1] - lon[0]
+    dy = lat[1] - lat[0]
+    x0 = float(lon[0] - dx / 2)
+    x1 = float(lon[-1] + dx / 2)
+    y0 = float(lat[0] - dy / 2)
+    y1 = float(lat[-1] + dy / 2)
+    theta_lim = np.hstack([y0, y1, x0, x1]).astype(">f4")
+
+    with open(hfile, "wb") as fid:
+        # Header
+        np.array(4 * (nc + 7), dtype=">i4").tofile(fid)
+        np.array(nx, dtype=">i4").tofile(fid)
+        np.array(ny, dtype=">i4").tofile(fid)
+        np.array(nc, dtype=">i4").tofile(fid)
+        theta_lim.tofile(fid)
+        con.values.astype("S4").tofile(fid)
+        np.array(4 * (nc + 7), dtype=">i4").tofile(fid)
+        # Records
+        constituent_header = np.array(8 * nx * ny, dtype=">i4")
+        for ic in range(nc):
+            constituent_header.tofile(fid)
+            data = np.zeros((ny, nx * 2))
+            data[:, 0 : 2 * nx - 1 : 2] = hRe[ic]
+            data[:, 1 : 2 * nx : 2] = hIm[ic]
+            data.astype(">f4").tofile(fid)
+            constituent_header.tofile(fid)
 
 
 class Otis:
