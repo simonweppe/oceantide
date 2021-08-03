@@ -21,6 +21,8 @@ from oceantide.core.utils import arakawa_grid, set_attributes
 
 
 CHAR = np.dtype(">c")
+INT = np.dtype(">i4")
+FLOAT = np.dtype(">f4")
 
 
 def from_otis(dset):
@@ -291,16 +293,76 @@ def read_otis_bin_grid(gfile):
     return dset
 
 
+def write_otis_bin_u(ufile, URe, UIm, VRe, VIm, con, lon, lat):
+    """Write elevation constituents data into otis binary file.
+
+    Args:
+        - ufile (str): Name of transports binary constituents file to write.
+        - URe (DataArray, 3darray): Real eastward velocity :math:`\\Re{u}(nc,nx,ny)`.
+        - UIm (DataArray, 3darray): Imag eastward velocity :math:`\\Im{u}(nc,nx,ny)`.
+        - VRe (DataArray, 3darray): Real northward velocity :math:`\\Re{v}(nc,nx,ny)`.
+        - VIm (DataArray, 3darray): Imag northward velocity :math:`\\Im{v}(nc,nx,ny)`.
+        - con (1darray): Constituents names (lowercase).
+        - lon (DataArray, 1darray): Longitude coordinates at the cell centre (Z-nodes).
+        - lat (DataArray, 1darray): Latitude coordinates at the cell centre (Z-nodes).
+
+    Note:
+        - Arrays must have shape consistent with Otis convention :math:`(nc,nx,ny)`.
+        - lon and lat can be 1d or 2d arrays.
+
+    """
+    nc, nx, ny = URe.shape
+
+    # Standarise coordinates
+    con = con.astype("S")
+    if lon.ndim > 1:
+        lon = lon[:, 0]
+    if lat.ndim > 1:
+        lat = lat[0, :]
+
+    # Header variables
+    dx = lon[1] - lon[0]
+    dy = lat[1] - lat[0]
+    x0 = float(lon[0] - dx / 2)
+    x1 = float(lon[-1] + dx / 2)
+    y0 = float(lat[0] - dy / 2)
+    y1 = float(lat[-1] + dy / 2)
+    theta_lim = np.hstack([y0, y1, x0, x1]).astype(FLOAT)
+    header1 = np.array(4 * (nc + 7), dtype=INT)
+    header2 =  np.array(2 * 8 * nx * ny, dtype=INT)
+
+    with open(ufile, "wb") as fid:
+        # Header
+        header1.tofile(fid)
+        np.array(nx, dtype=INT).tofile(fid)
+        np.array(ny, dtype=INT).tofile(fid)
+        np.array(nc, dtype=INT).tofile(fid)
+        theta_lim.tofile(fid)
+        con.values.astype("S4").tofile(fid)
+        header1.tofile(fid)
+
+        # Records
+        for ic in range(nc):
+            header2.tofile(fid)
+            data = np.zeros((ny, nx * 4))
+            data[:, 0 : 4 * nx - 3 : 4] = URe[ic].T
+            data[:, 1 : 4 * nx - 2 : 4] = UIm[ic].T
+            data[:, 2 : 4 * nx - 1 : 4] = VRe[ic].T
+            data[:, 3 : 4 * nx - 0 : 4] = VIm[ic].T
+            data.astype(FLOAT).tofile(fid)
+            header2.tofile(fid)
+
+
 def write_otis_bin_h(hfile, hRe, hIm, con, lon, lat):
     """Write elevation constituents data into otis binary file.
 
     Args:
         - hfile (str): Name of elevation binary constituents file to write.
-        - hRe (DataArray, 3darray): Real elevation component :math:`\\Re{h}(nc,nx,ny)`.
-        - hIm (DataArray, 3darray): Imag elevation component :math:`\\Im{h}(nc,nx,ny)`.
-        - con (1darray): Constituents to write.
-        - lon (DataArray, 1darray): Longitude coordinates.
-        - lat (DataArray, 1darray): Latitude coordinates.
+        - hRe (DataArray, 3darray): Real elevation :math:`\\Re{h}(nc,nx,ny)`.
+        - hIm (DataArray, 3darray): Imag elevation :math:`\\Im{h}(nc,nx,ny)`.
+        - con (1darray): Constituents names (lowercase).
+        - lon (DataArray, 1darray): Longitude coordinates at the cell centre (Z-nodes).
+        - lat (DataArray, 1darray): Latitude coordinates at the cell centre (Z-nodes).
 
     Note:
         - Arrays must have shape consistent with Otis convention :math:`(nc,nx,ny)`.
@@ -323,27 +385,28 @@ def write_otis_bin_h(hfile, hRe, hIm, con, lon, lat):
     x1 = float(lon[-1] + dx / 2)
     y0 = float(lat[0] - dy / 2)
     y1 = float(lat[-1] + dy / 2)
-    theta_lim = np.hstack([y0, y1, x0, x1]).astype(">f4")
+    theta_lim = np.hstack([y0, y1, x0, x1]).astype(FLOAT)
+    header1 = np.array(4 * (nc + 7), dtype=INT)
+    header2 =  np.array(8 * nx * ny, dtype=INT)
 
     with open(hfile, "wb") as fid:
         # Header
-        np.array(4 * (nc + 7), dtype=">i4").tofile(fid)
-        np.array(nx, dtype=">i4").tofile(fid)
-        np.array(ny, dtype=">i4").tofile(fid)
-        np.array(nc, dtype=">i4").tofile(fid)
+        header1.tofile(fid)
+        np.array(nx, dtype=INT).tofile(fid)
+        np.array(ny, dtype=INT).tofile(fid)
+        np.array(nc, dtype=INT).tofile(fid)
         theta_lim.tofile(fid)
         con.values.astype("S4").tofile(fid)
-        np.array(4 * (nc + 7), dtype=">i4").tofile(fid)
+        header1.tofile(fid)
 
         # Records
-        constituent_header = np.array(8 * nx * ny, dtype=">i4")
         for ic in range(nc):
-            constituent_header.tofile(fid)
+            header2.tofile(fid)
             data = np.zeros((ny, nx * 2))
             data[:, 0 : 2 * nx - 1 : 2] = hRe[ic].T
-            data[:, 1 : 2 * nx : 2] = hIm[ic].T
-            data.astype(">f4").tofile(fid)
-            constituent_header.tofile(fid)
+            data[:, 1 : 2 * nx - 0 : 2] = hIm[ic].T
+            data.astype(FLOAT).tofile(fid)
+            header2.tofile(fid)
 
 
 class Otis:
@@ -452,14 +515,28 @@ class Otis:
 
 if __name__ == "__main__":
 
-    from pathlib import Path
+    hfile = "/data/tide/tpxo9v4a/bin/DATA/h_tpxo9.v4a"
+    ufile = "/data/tide/tpxo9v4a/bin/DATA/u_tpxo9.v4a"
 
-    datadir = "../../tests/test_files/otis_binary"
-
-    hfile = os.path.join(datadir, "h_rag")
-    ufile = os.path.join(datadir, "u_rag")
-    gfile = os.path.join(datadir, "grid_rag")
-
+    # Reading
     dsh = read_otis_bin_h(hfile)
     dsu = read_otis_bin_u(ufile)
-    dsg = read_otis_bin_grid(gfile)
+
+    # Writing
+    # write_otis_bin_h("./hfile", dsh.hRe, dsh.hIm, dsh.con, dsh.lon_z, dsh.lat_z)
+    write_otis_bin_u("./ufile", dsu.URe, dsu.UIm, dsu.VRe, dsu.VIm, dsu.con, dsh.lon_z, dsh.lat_z)
+
+    # Reading written files
+    # dsh1 = read_otis_bin_h("./hfile")
+    dsu1 = read_otis_bin_u("./ufile")
+
+
+    # datadir = "../../tests/test_files/otis_binary"
+
+    # hfile = os.path.join(datadir, "h_rag")
+    # ufile = os.path.join(datadir, "u_rag")
+    # gfile = os.path.join(datadir, "grid_rag")
+
+    # dsh = read_otis_bin_h(hfile)
+    # dsu = read_otis_bin_u(ufile)
+    # dsg = read_otis_bin_grid(gfile)
