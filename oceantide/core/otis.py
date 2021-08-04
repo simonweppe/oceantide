@@ -31,6 +31,35 @@ def from_otis(dset):
     return otis.ds
 
 
+def indices_open_boundary(mz):
+    """Indices of open boundary iob.
+
+    Args:
+        - mz (DataArray): Land mask in Otis format :math:`m_z(nx,ny)`.
+
+    Return:
+        - iob (2darray): Indices of open boundary :math:`iob(2,nob)`. Longitude and
+          latitude indices are defined in the first and second rows respectively.
+
+    """
+    nx, ny = mz.shape
+
+    # Define indices coordinates
+    mz = mz.assign_coords({"nx": range(1, nx + 1), "ny": range(1, ny + 1)}).fillna(1.)
+
+    # Slice four boundaries, sort so they are continuous, stack along new coord
+    dsl = mz.isel(ny=[0]).stack({"n": ["nx", "ny"]})
+    dst = mz.isel(nx=[-1]).stack({"n": ["nx", "ny"]})
+    dsr = mz.isel(ny=[-1]).sortby("nx", ascending=False).stack({"n": ["nx", "ny"]})
+    dsb = mz.isel(nx=[0]).sortby("ny", ascending=False).stack({"n": ["nx", "ny"]})
+
+    # Concatenate boundaries and keep water points
+    iob = xr.concat([dsl, dst, dsr, dsb], dim="n")
+    iob = iob.where(iob == 1, drop=True)
+
+    return np.array([iob.nx.values, iob.ny.values])
+
+
 def otis_filenames(filename):
     """Otis data file names from `Model_*` metadata file.
 
@@ -68,14 +97,10 @@ def read_otis_bin_u(ufile):
 
     Returns:
         - dset (Dataset): Transport constituents grid with variables:
-            - URe: Real component of U :math:`U_{Re}(nc,nx,ny)`.
-            - UIm: Imag component of U :math:`U_{Im}(nc,nx,ny)`.
-            - VRe: Real component of V :math:`V_{Re}(nc,nx,ny)`.
-            - VIm: Imag component of V :math:`V_{Im}(nc,nx,ny)`.
-            - ua: Tidal eastern velocity amplitude :math:`A_{u}(nc,nx,ny)`.
-            - up: Tidal eastern velocity phase :math:`\phi_{u}(nc,nx,ny)`.
-            - va: Tidal northern velocity amplitude :math:`A_{v}(nc,nx,ny)`.
-            - vp: Tidal northern velocity phase :math:`\phi_{v}(nc,nx,ny)`.
+            - URe: Real component of eastward transport :math:`U_{Re}(nc,nx,ny)`.
+            - UIm: Imag component of eastward transport :math:`U_{Im}(nc,nx,ny)`.
+            - VRe: Real component of northward transport :math:`V_{Re}(nc,nx,ny)`.
+            - VIm: Imag component of northward transport :math:`V_{Im}(nc,nx,ny)`.
 
     TODO: Avoid transposing.
 
@@ -128,19 +153,11 @@ def read_otis_bin_u(ufile):
     dset["VRe"] = xr.DataArray(da.from_array(VRe), dims=("nc", "nx", "ny"))
     dset["VIm"] = xr.DataArray(da.from_array(VIm), dims=("nc", "nx", "ny"))
 
-    # Amplitude and phase
-    c = dset["URe"] + 1j * dset["UIm"]
-    dset["ua"] = np.absolute(c)
-    dset["up"] = (360 - xr.ufuncs.angle(c, deg=True)) % 360
-    c = dset["VRe"] + 1j * dset["VIm"]
-    dset["va"] = np.absolute(c)
-    dset["vp"] = (360 - xr.ufuncs.angle(c, deg=True)) % 360
-
     # Attributes
     set_attributes(dset, "otis")
     dset.attrs = {
         "type": "OTIS tidal transport file",
-        "title": "Oceantide tidal transport/current from binary file"
+        "title": "Oceantide tidal transport from binary file"
     }
 
     return dset
@@ -154,10 +171,8 @@ def read_otis_bin_h(hfile):
 
     Returns:
         - dset (Dataset): Elevation constituents grid with variables:
-            - hRe: Real component of h :math:`h_{Re}(nc,nx,ny)`.
-            - hIm: Imag component of h :math:`h_{Im}(nc,nx,ny)`.
-            - ha: Tidal elevation amplitude :math:`A_{u}(nc,nx,ny)`.
-            - hp: Tidal elevation phase :math:`\phi_{u}(nc,nx,ny)`.
+            - hRe: Real component of tidal elevation :math:`h_{Re}(nc,nx,ny)`.
+            - hIm: Imag component of tidal elevation :math:`h_{Im}(nc,nx,ny)`.
 
     TODO: Avoid transposing.
 
@@ -198,11 +213,6 @@ def read_otis_bin_h(hfile):
     dset["hRe"] = xr.DataArray(da.from_array(hRe), dims=("nc", "nx", "ny"))
     dset["hIm"] = xr.DataArray(da.from_array(hIm), dims=("nc", "nx", "ny"))
 
-    # Amplitude and phase
-    c = dset["hRe"] + 1j * dset["hIm"]
-    dset["ha"] = np.absolute(c)
-    dset["hp"] = (360 - xr.ufuncs.angle(c, deg=True)) % 360
-
     # Attributes
     set_attributes(dset, "otis")
     dset.attrs = {
@@ -234,14 +244,14 @@ def read_otis_bin_cons(hfile):
 
 
 def read_otis_bin_grid(gfile):
-    """Reads grid data from otis binary file.
+    """Read grid data from otis binary file.
 
     Args:
         - gfile (str): Name of grid binary file to read.
 
     Returns:
         - dset (Dataset): Grid with variables:
-            - hz:  Depth :math:`hz(lat_z,lon_z)`.
+            - hz: Depth :math:`hz(lat_z,lon_z)`.
             - mz: Mask :math:`mz(lat_z,lon_z)`.
 
     TODO: Avoid transposing.
@@ -250,24 +260,23 @@ def read_otis_bin_grid(gfile):
     with open(gfile, "rb") as f:
 
         f.seek(4, 0)
-        nx, ny = np.fromfile(f, dtype=np.int32, count=2).byteswap(True)
-        y0, y1, x0, x1 = np.fromfile(f, dtype=np.float32, count=4).byteswap(True)
-        np.fromfile(f, dtype=np.float32, count=1).byteswap(True)
-
-        nob = np.fromfile(f, dtype=np.int32, count=1).byteswap(True)
+        nx, ny = np.fromfile(f, dtype=INT, count=2)
+        y0, y1, x0, x1 = np.fromfile(f, dtype=FLOAT, count=4)
+        dt = np.fromfile(f, dtype=FLOAT, count=1) # lat-lon if > 0
+        nob = np.fromfile(f, dtype=INT, count=1)
         if nob == 0:
             f.seek(20, 1)
             iob = []
         else:
             f.seek(8, 1)
-            iob = np.fromfile(f, dtype=np.int32, count=int(2 * nob)).byteswap(True)
+            iob = np.fromfile(f, INT, count=int(2 * nob))
             iob = iob.reshape((2, int(nob)))
             f.seek(8, 1)
 
-        hz = np.fromfile(f, dtype=np.float32, count=int(nx * ny)).byteswap(True)
+        hz = np.fromfile(f, dtype=FLOAT, count=int(nx * ny))
         hz = hz.reshape((ny, nx))
         f.seek(8, 1)
-        mz = np.fromfile(f, dtype=np.int32, count=int(nx * ny)).byteswap(True)
+        mz = np.fromfile(f, dtype=INT, count=int(nx * ny))
         mz = mz.reshape((ny, nx))
 
     hz = hz.transpose()
@@ -294,7 +303,7 @@ def read_otis_bin_grid(gfile):
 
 
 def write_otis_bin_u(ufile, URe, UIm, VRe, VIm, con, lon, lat):
-    """Write elevation constituents data into otis binary file.
+    """Write elevation constituents data in the otis binary file.
 
     Args:
         - ufile (str): Name of transports binary constituents file to write.
@@ -354,7 +363,7 @@ def write_otis_bin_u(ufile, URe, UIm, VRe, VIm, con, lon, lat):
 
 
 def write_otis_bin_h(hfile, hRe, hIm, con, lon, lat):
-    """Write elevation constituents data into otis binary file.
+    """Write elevation constituents data in the otis binary file.
 
     Args:
         - hfile (str): Name of elevation binary constituents file to write.
@@ -517,26 +526,23 @@ if __name__ == "__main__":
 
     hfile = "/data/tide/tpxo9v4a/bin/DATA/h_tpxo9.v4a"
     ufile = "/data/tide/tpxo9v4a/bin/DATA/u_tpxo9.v4a"
+    gfile = "/data/tide/tpxo9v4a/bin/DATA/grid_tpxo9.v4a"
+
+    # Original netcdf
+    dsg0 = xr.open_dataset("/data/tide/tpxo9v4a/netcdf/DATA/grid_tpxo9.v4a.nc")
 
     # Reading
-    dsh = read_otis_bin_h(hfile)
-    dsu = read_otis_bin_u(ufile)
+    # dsh = read_otis_bin_h(hfile)
+    # dsu = read_otis_bin_u(ufile)
+    dsg = read_otis_bin_grid(gfile)
 
     # Writing
     # write_otis_bin_h("./hfile", dsh.hRe, dsh.hIm, dsh.con, dsh.lon_z, dsh.lat_z)
-    write_otis_bin_u("./ufile", dsu.URe, dsu.UIm, dsu.VRe, dsu.VIm, dsu.con, dsh.lon_z, dsh.lat_z)
+    # write_otis_bin_u("./ufile", dsu.URe, dsu.UIm, dsu.VRe, dsu.VIm, dsu.con, dsh.lon_z, dsh.lat_z)
 
     # Reading written files
     # dsh1 = read_otis_bin_h("./hfile")
-    dsu1 = read_otis_bin_u("./ufile")
+    # dsu1 = read_otis_bin_u("./ufile")
 
 
-    # datadir = "../../tests/test_files/otis_binary"
-
-    # hfile = os.path.join(datadir, "h_rag")
-    # ufile = os.path.join(datadir, "u_rag")
-    # gfile = os.path.join(datadir, "grid_rag")
-
-    # dsh = read_otis_bin_h(hfile)
-    # dsu = read_otis_bin_u(ufile)
-    # dsg = read_otis_bin_grid(gfile)
+    iob = indices_open_boundary(dsg0.mz)
