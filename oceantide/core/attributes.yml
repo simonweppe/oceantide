@@ -6,101 +6,71 @@ otis:
   lon_z:
     standard_name: longitude
     long_name: longitude of Z nodes
-    units: degree east
+    units: degree_east
   lat_z:
     standard_name: latitude
     long_name: latitude of Z nodes
-    units: degree north
+    units: degree_north
   lon_u:
     standard_name: longitude
     long_name: longitude of U nodes
-    units: degree east
+    units: degree_east
   lat_u:
     standard_name: latitude
     long_name: latitude of U nodes
-    units: degree north
+    units: degree_north
   lon_v:
     standard_name: longitude
     long_name: longitude of V nodes
-    units: degree east
+    units: degree_east
   lat_v:
     standard_name: latitude
     long_name: latitude of V nodes
-    units: degree north
+    units: degree_north
   hRe:
     standard_name: tidal_elevation_complex_amplitude_real_part
     long_name: Tidal elevation complex amplitude, Real part at Z-nodes
-    units: meter
+    units: m
     field: Re(z), scalar
   hIm:
     standard_name: tidal_elevation_complex_amplitude_imag_part
     long_name: Tidal elevation complex amplitude, Imag part at Z-nodes
-    units: meter
+    units: m
     field: Im(z), scalar
-  ha:
-    standard_name: tidal_elevation_amplitude
-    long_name: Tidal elevation amplitude at Z-nodes
-    units: meter
-    field: amplitude, scalar
-  hp:
-    standard_name: tidal_elevation_phase
-    long_name: Tidal elevation phase at Z-nodes
-    units: degree GMT
-    field: phase, scalar
   URe:
     standard_name: tidal_eastward_transport_complex_amplitude_real_part
     long_name: Tidal WE transport complex amplitude, Real part at U-nodes
-    units: meter^2/s
+    units: m2 s-1
     field: Re(U), vector W->E
   UIm:
     standard_name: tidal_eastward_transport_complex_amplitude_imag_part
     long_name: Tidal WE transport complex amplitude, Imag part at U-nodes
-    units: meter^2/s
+    units: m2 s-1
     field: Im(U), vector W->E
-  ua:
-    standard_name: tidal_eastward_velocity_amplitude
-    long_name: Tidal WE velocity amplitude at U-nodes
-    units: m/s
-    field: vector, W->E
-  up:
-    standard_name: tidal_eastward_velocity_phase
-    long_name: Tidal WE transport/velocity phase at U-nodes
-    units: degree GMT
-    field: phase, scalar
   VRe:
     standard_name: tidal_northward_transport_complex_amplitude_real_part
     long_name: Tidal SN transport complex amplitude, Real part at V-nodes
-    units: meter^2/s
+    units: m2 s-1
     field: Re(U), vector S->N
   VIm:
     standard_name: tidal_eastward_transport_complex_amplitude_imag_part
     long_name: Tidal SN transport complex amplitude, Imag part at V-nodes
-    units: meter^2/s
+    units: m2 s-1
     field: Im(U), vector S->N
-  va:
-    standard_name: tidal_northward_velocity_amplitude
-    long_name: Tidal SN velocity amplitude at V-nodes
-    units: m/s
-    field: vector, S->N
-  vp:
-    standard_name: tidal_northward_velocity_phase
-    long_name: Tidal SN transport/velocity phase at V-nodes
-    units: degree GMT
-    field: phase, scalar
   hz:
     standard_name: sea_floor_depth_below_mean_sea_level
     long_name: Bathymetry at Z-nodes
-    units: meter
+    units: m
     field: bath, scalar
   hu:
     standard_name: sea_floor_depth_below_mean_sea_level
     long_name: Bathymetry at U-nodes
-    units: meter
+    units: m
     field: bath, scalar
   hv:
     standard_name: sea_floor_depth_below_mean_sea_level
     long_name: Bathymetry at V-nodes
-    units: meter
+    units: m
     field: bath, scalar
   mz:
     standard_name: land_mask
