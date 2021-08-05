@@ -545,7 +545,7 @@ class Otis:
 
         del dsu
 
-        self.ds["depth"] = dsg.hz.rename({"nx": "lon_z", "ny": "lat_z"}).where(mz)
+        self.ds["dep"] = dsg.hz.rename({"nx": "lon_z", "ny": "lat_z"}).where(mz)
         self.ds["hRe"] = dsh.hRe.rename({"nc": "con", "nx": "lon_z", "ny": "lat_z"}).where(mz)
         self.ds["hIm"] = dsh.hIm.rename({"nc": "con", "nx": "lon_z", "ny": "lat_z"}).where(mz)
         self.ds["uRe"] = URe / hu
@@ -562,7 +562,7 @@ class Otis:
         for v in ["h", "u", "v"]:
             self.ds[f"{v}"] = self.ds[f"{v}Re"] + 1j * self.ds[f"{v}Im"]
             self.ds = self.ds.drop_vars([f"{v}Re", f"{v}Im"])
-        self.ds = self.ds.rename({"h": "et", "u": "ut", "v": "vt"})
+        # self.ds = self.ds.rename({"h": "et", "u": "ut", "v": "vt"})
 
     def _to_single_grid(self):
         """Convert Arakawa into single grid at Z-nodes."""
@@ -589,7 +589,7 @@ class Otis:
 
     def _set_attributes(self):
         """Define attributes for formatted dataset."""
-        self.ds.depth.attrs = {}
+        self.ds.dep.attrs = {}
         set_attributes(self.ds, "oceantide")
         self.ds.attrs = {"description": "Oceantide tidal constituents"}
 

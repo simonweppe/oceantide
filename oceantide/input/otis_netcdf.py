@@ -49,13 +49,3 @@ def read_otis_netcdf(filename=None, gfile=None, hfile=None, ufile=None):
     dset = otis_to_oceantide(dsg, dsh, dsu)
 
     return dset
-
-
-if __name__ == "__main__":
-
-
-    hfile = "/data/tide/tpxo9v4a/netcdf/DATA/h_tpxo9.v4a.nc"
-    ufile = "/data/tide/tpxo9v4a/netcdf/DATA/u_tpxo9.v4a.nc"
-    gfile = "/data/tide/tpxo9v4a/netcdf/DATA/grid_tpxo9.v4a.nc"
-
-    dset = read_otis_netcdf(gfile=gfile, hfile=hfile, ufile=ufile)

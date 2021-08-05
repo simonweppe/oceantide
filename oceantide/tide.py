@@ -6,7 +6,7 @@ import dask.array as da
 import pandas as pd
 import xarray as xr
 
-from oceantide.core.utils import nodal
+from oceantide.core.utils import nodal, set_attributes
 from oceantide.constituents import OMEGA
 
 
@@ -23,24 +23,8 @@ class Tide:
 
     def _set_attributes_output(self, dset):
         """Set attributes in output timeseries dataset."""
-        dset.attrs = {
-            "description": "Tide elevation and currents prediction time series",
-        }
-        if "et" in dset.data_vars:
-            dset["et"].attrs = {
-                "standard_name": "tidal_sea_surface_height_above_mean_sea_level",
-                "units": "m",
-            }
-        if "ut" in dset.data_vars:
-            dset["ut"].attrs = {
-                "standard_name": "eastward_sea_water_velocity_due_to_tides",
-                "units": "m s-1",
-            }
-        if "vt" in dset.data_vars:
-            dset["vt"].attrs = {
-                "standard_name": "northward_sea_water_velocity_due_to_tides",
-                "units": "m s-1",
-            }
+        set_attributes(dset, "timeseries")
+        dset.attrs = {"description": "Tide elevation and currents time series"}
         return dset
 
     def _validate(self):
@@ -51,7 +35,7 @@ class Tide:
             * Constituents coordinate appropriately formatted.
 
         """
-        required_vars = ["et", "ut", "vt"]
+        required_vars = ["h", "u", "v"]
         if not set(required_vars).issubset(self._obj.data_vars):
             raise ValueError(
                 f"Tide accessor requires variables {required_vars} in dataset but "
@@ -71,30 +55,30 @@ class Tide:
                 f"`con` must be Unicode string dtype, found {self._obj.con.dtype}"
             )
 
-    def amplitude(self, component="et"):
+    def amplitude(self, component="h"):
         """Tidal amplitude.
 
         :math:`\\lambda=\\sqrt{\\Re(z)+\\Im(z)}`
 
         Args:
             - component (str): Tidal component to calculate amplitude from,
-              one of 'et', 'ut', 'vt'.
+              one of 'h', 'u', 'v'.
 
         """
         darr = np.absolute(self._obj[component])
-        if component == "et":
+        if component == "h":
             darr.attrs = {
                 "standard_name": "sea_surface_height_amplitude_due_to_geocentric_ocean_tide",
                 "long_name": "Tidal elevation amplitude",
                 "units": "m",
             }
-        elif component == "ut":
+        elif component == "u":
             darr.attrs = {
                 "standard_name": "eastward_sea_water_velocity_amplitude_due_to_tides",
                 "long_name": "Tidal eastward velocity amplitude",
                 "units": "m s-1",
             }
-        elif component == "vt":
+        elif component == "v":
             darr.attrs = {
                 "standard_name": "northward_sea_water_velocity_amplitude_due_to_tides",
                 "long_name": "Tidal northward velocity amplitude",
@@ -102,28 +86,28 @@ class Tide:
             }
         return darr
 
-    def phase(self, component="et"):
+    def phase(self, component="h"):
         """Tidal phase.
 
         Args:
             - component (str): Tidal component to calculate amplitude from,
-              one of 'et', 'ut', 'vt'.
+              one of 'h', 'u', 'v'.
 
         """
         darr = 360 - (xr.ufuncs.angle(self._obj[component], deg=True)) % 360
-        if component == "et":
+        if component == "h":
             darr.attrs = {
                 "standard_name": "sea_surface_height_phase_due_to_geocentric_ocean_tide",
                 "long_name": "Tidal elevation phase",
                 "units": "degree GMT",
             }
-        elif component == "ut":
+        elif component == "u":
             darr.attrs = {
                 "standard_name": "eastward_sea_water_velocity_phase_due_to_tides",
                 "long_name": "Tidal eastward velocity phase",
                 "units": "degree GMT",
             }
-        elif component == "vt":
+        elif component == "v":
             darr.attrs = {
                 "standard_name": "northward_sea_water_velocity_phase_due_to_tides",
                 "long_name": "Tidal northward velocity phase",
@@ -131,23 +115,23 @@ class Tide:
             }
         return darr
 
-    def predict(self, times, time_chunk=50, tide_vars=["et", "ut", "vt"]):
+    def predict(self, times, time_chunk=50, components=["h", "u", "v"]):
         """Predict tide timeseries.
 
         Args:
             times (arr): Array of datetime objects or DataArray of times to predict tide over. If an array, a new times dimension will be created.
             time_chunk (float): Time chunk size so that computation fit into memory.
-            tide_vars (list): Tide variables to predict.
+            components (list): Tide variables to predict.
 
         Returns:
-            Dataset predicted tide timeseries components specified in tide_vars.
+            Dataset predicted tide timeseries components.
 
         """
-        if not tide_vars:
+        if not components:
             raise ValueError("Choose at least one tide variable to predict")
 
-        conlist = list(self._obj.con.values)
-
+        if isinstance(times, datetime.datetime):
+            times = [times]
         if isinstance(times, (list, tuple, np.ndarray, pd.DatetimeIndex)):
             seconds_array = pd.array(times).astype(int) / 1e9 - 694224000
             tsec = xr.DataArray(
@@ -163,36 +147,33 @@ class Tide:
                 "numpy array of datetime64 or xarray DataArray of datetime64"
             )
 
-        pu, pf, v0u = nodal(tsec[0] / 86400 + 48622.0, conlist)
+        cons = list(self._obj.con.values)
+        pu, pf, v0u = nodal(tsec[0] / 86400 + 48622.0, cons)
 
         # Variables for calculations
-        pf = xr.DataArray(pf, coords={"con": conlist}, dims=("con",))
-        pu = xr.DataArray(pu, coords={"con": conlist}, dims=("con",))
-        v0u = xr.DataArray(v0u, coords={"con": conlist}, dims=("con",))
+        pf = xr.DataArray(pf, coords={"con": cons}, dims=("con",))
+        pu = xr.DataArray(pu, coords={"con": cons}, dims=("con",))
+        v0u = xr.DataArray(v0u, coords={"con": cons}, dims=("con",))
         omega = xr.DataArray(
-            data=[OMEGA[c] for c in conlist], coords={"con": conlist}, dims=("con",)
+            data=[OMEGA[c] for c in cons], coords={"con": cons}, dims=("con",)
         )
 
         cos = da.cos(tsec * omega + v0u + pu)
         sin = da.sin(tsec * omega + v0u + pu)
 
-        dsout = xr.Dataset()
-        if "et" in tide_vars:
-            dsout["et"] = (
-                cos * pf * self._obj["et"].real - sin * pf * self._obj["et"].imag
-            )
-        if "ut" in tide_vars:
-            dsout["ut"] = (
-                cos * pf * self._obj["ut"].real - sin * pf * self._obj["ut"].imag
-            )
-        if "vt" in tide_vars:
-            dsout["vt"] = (
-                cos * pf * self._obj["vt"].real - sin * pf * self._obj["vt"].imag
-            )
-        dsout = dsout.sum(dim="con", skipna=False)
-        dsout = self._set_attributes_output(dsout)
+        dset = xr.Dataset()
+        if "dep" in self._obj.data_vars:
+            dset["dep"] = self._obj.dep
+        if "h" in components:
+            dset["h"] = cos * pf * self._obj["h"].real - sin * pf * self._obj["h"].imag
+        if "u" in components:
+            dset["u"] = cos * pf * self._obj["u"].real - sin * pf * self._obj["u"].imag
+        if "v" in components:
+            dset["v"] = cos * pf * self._obj["v"].real - sin * pf * self._obj["v"].imag
+        dset = dset.sum(dim="con", skipna=False)
+        dset = self._set_attributes_output(dset)
 
-        return dsout
+        return dset
 
     def ellipse(self):
         """Tidal ellipse parameters.
@@ -234,8 +215,8 @@ class Tide:
         """
         # Complex amplitudes for u and v
         i = 1j
-        u = self._obj.ut.real * xr.ufuncs.exp(-i * self._obj.ut.imag)
-        v = self._obj.vt.real * xr.ufuncs.exp(-i * self._obj.vt.imag)
+        u = self._obj.u.real * xr.ufuncs.exp(-i * self._obj.u.imag)
+        v = self._obj.v.real * xr.ufuncs.exp(-i * self._obj.v.imag)
 
         # Calculate complex radius of clockwise circles
         wp = (u + i * v) / 2
@@ -279,11 +260,11 @@ class Tide:
         wm_stacked = wm.stack({"stacked": ("con", "lat", "lon")})
         w = (wp_stacked * np.exp(i * ot) + wm_stacked * np.exp(-i * ot)).unstack()
 
-        dsout = xr.Dataset()
-        dsout["SEMA"] = SEMA
-        dsout["ECC"] = ECC
-        dsout["INC"] = INC
-        dsout["PHA"] = PHA
-        dsout["w"] = w
+        dset = xr.Dataset()
+        dset["SEMA"] = SEMA
+        dset["ECC"] = ECC
+        dset["INC"] = INC
+        dset["PHA"] = PHA
+        dset["w"] = w
 
-        return dsout
+        return dset

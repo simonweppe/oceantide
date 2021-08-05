@@ -92,19 +92,19 @@ otis:
     option_1: water
 
 oceantide:
-  depth:
+  dep:
     standard_name: sea_floor_depth_below_mean_sea_level
     long_name: Bathymetry
     units: m
-  et:
+  h:
     standard_name: tidal_elevation_complex_amplitude
     long_name: Tidal elevation complex amplitude
     units: m
-  ut:
+  u:
     standard_name: tidal_eastward_velocity_complex_amplitude
     long_name: Tidal eastward velocity complex amplitude
     units: m s-1
-  vt:
+  v:
     standard_name: tidal_northward_velocity_complex_amplitude
     long_name: Tidal northward velocity complex amplitude
     units: m s-1
@@ -120,3 +120,32 @@ oceantide:
     standard_name: latitude
     long_name: Latitude
     units: degree_north
+
+timeseries:
+  h:
+    standard_name: tidal_sea_surface_height_above_mean_sea_level
+    long_name: Tidal elevation
+    units: m
+  u:
+    standard_name: eastward_sea_water_velocity_due_to_tides
+    long_name: Tidal eastward velocity
+    units: m s-1
+  v:
+    standard_name: northward_sea_water_velocity_due_to_tides
+    long_name: Tidal northward velocity
+    units: m s-1
+  dep:
+    standard_name: sea_floor_depth_below_mean_sea_level
+    long_name: Bathymetry
+    units: m
+  lon:
+    standard_name: longitude
+    long_name: Longitude
+    units: degree_east
+  lat:
+    standard_name: latitude
+    long_name: Latitude
+    units: degree_north
+  time:
+    standard_name: time
+    long_name: Time
