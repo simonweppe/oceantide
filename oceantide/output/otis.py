@@ -74,17 +74,6 @@ if __name__ == "__main__":
         ll_1, nx_1, ny_1, nc_1 = np.fromfile(f, dtype=np.int32, count=4).byteswap(True)
         y0_1, y1_1, x0_1, x1_1 = np.fromfile(f, dtype=np.float32, count=4).byteswap(True)
 
-    # print(f"ll: {ll_1}")
-    # print(f"nx: {nx_1}")
-    # print(f"ny: {ny_1}")
-    # print(f"nc: {nc_1}")
-    # print(f"x0: {x0_1}")
-    # print(f"x1: {x1_1}")
-    # print(f"x0: {y0_1}")
-    # print(f"x0: {y1_1}")
-
-    # Compare with new function
-
     then = datetime.datetime.now()
     write_otis_bin_h("file2", ds.hRe, ds.hIm, ds.con, ds.lon_z, ds.lat_z)
     now = datetime.datetime.now()
@@ -92,9 +81,3 @@ if __name__ == "__main__":
     print(f"Elapsed: {elapsed:0.0f}s")
 
     print(f'Same file: {filecmp.cmp("file1", "file2", shallow=False)}')
-
-    # # Read original and new files to compare
-    # filename0 = "/data/tide/tpxo9v4a/bin/DATA/h_tpxo9.v4a"
-    # filename1 = filename
-    # ds0 = read_otis_bin_h(filename0)
-    # ds1 = read_otis_bin_h(filename1)
