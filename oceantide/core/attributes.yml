@@ -90,3 +90,33 @@ otis:
     units: ""
     option_0: land
     option_1: water
+
+oceantide:
+  depth:
+    standard_name: sea_floor_depth_below_mean_sea_level
+    long_name: Bathymetry
+    units: m
+  et:
+    standard_name: tidal_elevation_complex_amplitude
+    long_name: Tidal elevation complex amplitude
+    units: m
+  ut:
+    standard_name: tidal_eastward_velocity_complex_amplitude
+    long_name: Tidal eastward velocity complex amplitude
+    units: m s-1
+  vt:
+    standard_name: tidal_northward_velocity_complex_amplitude
+    long_name: Tidal northward velocity complex amplitude
+    units: m s-1
+  con:
+    standard_name: tidal_constituent
+    long_name: Tidal constituent
+    units: ""
+  lon:
+    standard_name: longitude
+    long_name: Longitude
+    units: degree_east
+  lat:
+    standard_name: latitude
+    long_name: Latitude
+    units: degree_north

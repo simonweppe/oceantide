@@ -515,9 +515,16 @@ class Otis:
         dsh = self.dsh.transpose("nc", "ny", "nx", ...)
         dsu = self.dsu.transpose("nc", "ny", "nx", ...)
 
+        del self.dsg
+        del self.dsh
+        del self.dsu
+
         mz = dsg.mz.rename({"nx": "lon_z", "ny": "lat_z"})
         mu = dsg.mu.rename({"nx": "lon_u", "ny": "lat_u"})
         mv = dsg.mv.rename({"nx": "lon_v", "ny": "lat_v"})
+
+        hu = dsg.hu.rename({"nx": "lon_u", "ny": "lat_u"}).where(mu)
+        hv = dsg.hv.rename({"nx": "lon_v", "ny": "lat_v"}).where(mv)
 
         URe = dsu.URe.rename({"nc": "con", "nx": "lon_u", "ny": "lat_u"}).where(mu)
         UIm = dsu.UIm.rename({"nc": "con", "nx": "lon_u", "ny": "lat_u"}).where(mu)
@@ -535,18 +542,20 @@ class Otis:
                 "lat_v": dsu.lat_v.isel(nx=0).rename({"ny": "lat_v"}),
             },
         )
-        self.ds["hz"] = dsg.hz.rename({"nx": "lon_z", "ny": "lat_z"}).where(mz)
-        self.ds["hu"] = dsg.hu.rename({"nx": "lon_u", "ny": "lat_u"}).where(mu)
-        self.ds["hv"] = dsg.hv.rename({"nx": "lon_v", "ny": "lat_v"}).where(mv)
+
+        del dsu
+
+        self.ds["depth"] = dsg.hz.rename({"nx": "lon_z", "ny": "lat_z"}).where(mz)
         self.ds["hRe"] = dsh.hRe.rename({"nc": "con", "nx": "lon_z", "ny": "lat_z"}).where(mz)
         self.ds["hIm"] = dsh.hIm.rename({"nc": "con", "nx": "lon_z", "ny": "lat_z"}).where(mz)
-        self.ds["uRe"] = URe / self.ds["hu"]
-        self.ds["uIm"] = UIm / self.ds["hu"]
-        self.ds["vRe"] = VRe / self.ds["hv"]
-        self.ds["vIm"] = VIm / self.ds["hv"]
+        self.ds["uRe"] = URe / hu
+        self.ds["uIm"] = UIm / hu
+        self.ds["vRe"] = VRe / hv
+        self.ds["vIm"] = VIm / hv
         self.ds["con"] = self.ds.con.astype("S4")
 
-        self.ds = self.ds.where(self.ds < 1e10)
+        del dsg
+        del dsh
 
     def _to_complex(self):
         """Merge real and imaginary components into a complex variable."""
@@ -570,12 +579,8 @@ class Otis:
         mv = self.ds.vRe.isel(con=0).notnull()
         self.ds = self.ds.where(mz).where(mu).where(mv)
 
-        self.ds = self.ds.rename({"lat_z": "lat", "lon_z": "lon", "hz": "depth"})
-
-        self.ds = self.ds.drop_vars(
-            ["lat_u", "lat_v", "lon_u", "lon_v", "hu", "hv", "mz", "mu", "mv"],
-            errors="ignore",
-        )
+        self.ds = self.ds.rename({"lat_z": "lat", "lon_z": "lon"})
+        self.ds = self.ds.drop_vars(["lat_u", "lat_v", "lon_u", "lon_v"])
 
     def _format_cons(self):
         """Format constituents coordinates."""
@@ -584,26 +589,9 @@ class Otis:
 
     def _set_attributes(self):
         """Define attributes for formatted dataset."""
-        self.ds.attrs = {"description": "Tide constituents"}
-        self.ds.depth.attrs = {
-            "standard_name": "sea_floor_depth_below_mean_sea_level",
-            "units": "m",
-        }
-        self.ds.et.attrs = {
-            "standard_name": "tidal_elevation_complex_amplitude",
-            "units": "m",
-        }
-        self.ds.ut.attrs = {
-            "standard_name": "tidal_we_velocity_complex_amplitude",
-            "units": "m",
-        }
-        self.ds.vt.attrs = {
-            "standard_name": "tidal_ns_velocity_complex_amplitude",
-            "units": "m s-1",
-        }
-        self.ds.con.attrs = {"standard_name": "tidal_constituent", "units": ""}
-        self.ds.lat.attrs = {"standard_name": "latitude", "units": "degrees_north"}
-        self.ds.lon.attrs = {"standard_name": "longitude", "units": "degrees_east"}
+        self.ds.depth.attrs = {}
+        set_attributes(self.ds, "oceantide")
+        self.ds.attrs = {"description": "Oceantide tidal constituents"}
 
     def validate(self):
         """Check that input dataset has all requirements."""
