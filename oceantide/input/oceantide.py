@@ -5,16 +5,17 @@ import xarray as xr
 from oceantide.tide import Tide
 
 
-def read_oceantide(filename=None, engine="zarr", backend_kwargs={"consolidated": True}):
+def read_oceantide(filename=None, engine="zarr", backend_kwargs={"consolidated": True}, **kwargs):
     """Read Oceantide file format.
 
     Args:
-        filename (str): Name of Oceantide dataset to read.
-        engine (str): Engine to pass to xr.open_dataset.
-        backend_kwargs (dict): Keywargs to pass to xr.open_dataset.
+        - filename (str): Name of Oceantide dataset to read.
+        - engine (str): Engine to pass to xr.open_dataset.
+        - backend_kwargs (dict): Keywargs to pass to xr.open_dataset.
+        - kwargs: Extra kwargs to pass to xr.open_dataset.
 
     Returns:
-        Formatted dataset with the tide accessor.
+        - Formatted dataset with the tide accessor.
 
     Tide constituents datasets read with any reader function in oceantide returns
         datasets in the oceantide format. The dataset should look like:
@@ -32,7 +33,9 @@ def read_oceantide(filename=None, engine="zarr", backend_kwargs={"consolidated":
         v       (con, lat, lon) complex128 dask.array<chunksize=(3, 126, 241), meta=np.ndarray>
 
     """
-    dset = xr.open_dataset(filename, engine="zarr", backend_kwargs=backend_kwargs)
+    dset = xr.open_dataset(
+        filename, engine=engine, backend_kwargs=backend_kwargs, **kwargs
+    )
 
     # For backward compatibility
     if "et" in dset.data_vars and "h" not in dset.data_vars:
