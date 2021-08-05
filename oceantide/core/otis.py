@@ -25,12 +25,6 @@ INT = np.dtype(">i4")
 FLOAT = np.dtype(">f4")
 
 
-def from_otis(dset):
-    """Format Otis-like dataset to implement the oceantide accessor."""
-    otis = Otis(dset)
-    return otis.ds
-
-
 def theta_lim(lon, lat):
     """Grid limits (y0, y1, x0, x1).
 
@@ -277,8 +271,25 @@ def read_otis_bin_grid(gfile):
 
     Returns:
         - dset (Dataset): Grid with variables:
-            - hz: Depth :math:`hz(lat_z,lon_z)`.
-            - mz: Mask :math:`mz(lat_z,lon_z)`.
+            - lon_z: Longitude coordinates at Z-nodes :math:`lon_z(nx,ny)`.
+            - lat_z: Latitude coordinates at Z-nodes :math:`lat_z(nx,ny)`.
+            - lon_u: Longitude coordinates at U-nodes :math:`lon_u(nx,ny)`.
+            - lat_u: Latitude coordinates at U-nodes :math:`lat_u(nx,ny)`.
+            - lon_v: Longitude coordinates at V-nodes :math:`lon_v(nx,ny)`.
+            - lat_v: Latitude coordinates at V-nodes :math:`lat_v(nx,ny)`.
+            - mz: Mask at Z-nodes :math:`m_z(nx,ny)`.
+            - mu: Mask at U-nodes :math:`m_u(nx,ny)`.
+            - mv: Mask at V-nodes :math:`m_v(nx,ny)`.
+            - hz: Depth at Z-nodes :math:`h_z(nx,ny)`.
+            - hu: Depth at U-nodes :math:`h_u(nx,ny)`.
+            - hv: Depth at V-nodes :math:`h_v(nx,ny)`.
+            - iob_z: Indices of open boundary in hz :math:`iob_z(2,nob)`.
+            - iob_u: Indices of open boundary in hu :math:`iob_u(2,nob)`.
+            - iob_v: Indices of open boundary in hv :math:`iob_v(2,nob)`.
+
+    Note:
+        - Indices of open boundary are defined from mz, mu, mv, the values of iob
+          read from file are ignored (there are inconsistencies in tpxo files).
 
     """
     with open(gfile, "rb") as f:
@@ -303,16 +314,43 @@ def read_otis_bin_grid(gfile):
     hz = hz.transpose()
     mz = mz.transpose()
 
-    # Dataset Otis style
     lon_z, lat_z = arakawa_grid(nx, ny, x0, x1, y0, y1, "h")
+    lon_u, lat_u = arakawa_grid(nx, ny, x0, x1, y0, y1, "u")
+    lon_v, lat_v = arakawa_grid(nx, ny, x0, x1, y0, y1, "v")
     lat_z, lon_z = np.meshgrid(lat_z, lon_z)
+    lat_u, lon_u = np.meshgrid(lat_u, lon_u)
+    lat_v, lon_v = np.meshgrid(lat_v, lon_v)
+
+    # Dataset Otis style
     dset = xr.Dataset()
 
+    # Coords
     dset["lon_z"] = xr.DataArray(da.from_array(lon_z), dims=("nx", "ny"))
     dset["lat_z"] = xr.DataArray(da.from_array(lat_z), dims=("nx", "ny"))
-    dset["hz"] = xr.DataArray(da.from_array(hz), dims=("nx", "ny"))
-    dset["mz"] = xr.DataArray(da.from_array(mz), dims=("nx", "ny"))
-    dset["iob_z"] = xr.DataArray(da.from_array(iob), dims=("iiob", "nob_z"))
+    dset["lon_u"] = xr.DataArray(da.from_array(lon_u), dims=("nx", "ny"))
+    dset["lat_u"] = xr.DataArray(da.from_array(lat_u), dims=("nx", "ny"))
+    dset["lon_v"] = xr.DataArray(da.from_array(lon_v), dims=("nx", "ny"))
+    dset["lat_v"] = xr.DataArray(da.from_array(lat_v), dims=("nx", "ny"))
+
+    # Mask
+    dset["mz"] = xr.DataArray(da.from_array(mz), dims=("nx", "ny")).astype("int32")
+    dset["mu"] = dset.mz * dset.mz.roll(nx=1, roll_coords=False)
+    dset["mv"] = dset.mz * dset.mz.roll(ny=1, roll_coords=False)
+
+    # Depth
+    dset["hz"] = xr.DataArray(da.from_array(hz), dims=("nx", "ny")).astype("float64")
+    iku = (dset.mz + dset.mz.roll(nx=1, roll_coords=False)) == 1
+    ikv = (dset.mz + dset.mz.roll(ny=1, roll_coords=False)) == 1
+    hu = dset.mu * (dset.hz + dset.hz.roll(nx=1, roll_coords=False)) / 2
+    hv = dset.mv * (dset.hz + dset.hz.roll(ny=1, roll_coords=False)) / 2
+    dset["hu"] = xr.where(iku, dset.hz, hu)
+    dset["hv"] = xr.where(ikv, dset.hz, hv)
+
+    # Indices open boundaries
+    # dset["iob_z"] = xr.DataArray(da.from_array(iob), dims=("iiob", "nob_z"))
+    dset["iob_z"] = xr.DataArray(indices_open_boundary(dset.mz), dims=("iiob", "nob_z"))
+    dset["iob_u"] = xr.DataArray(indices_open_boundary(dset.mu), dims=("iiob", "nob_u"))
+    dset["iob_v"] = xr.DataArray(indices_open_boundary(dset.mv), dims=("iiob", "nob_v"))
 
     # Attributes
     set_attributes(dset, "otis")
@@ -461,6 +499,12 @@ def write_otis_bin_grid(gfile, hz, mz, lon, lat, dt=12):
         delim.tofile(fid)
 
 
+def from_otis(dset):
+    """Format Otis-like dataset to implement the oceantide accessor."""
+    otis = Otis(dset)
+    return otis.ds
+
+
 class Otis:
     """Otis object formatter."""
 
@@ -574,12 +618,12 @@ if __name__ == "__main__":
     # Original netcdf
     # dsh0 = xr.open_dataset("/data/tide/tpxo9v4a/netcdf/DATA/h_tpxo9.v4a.nc")
     # dsu0 = xr.open_dataset("/data/tide/tpxo9v4a/netcdf/DATA/u_tpxo9.v4a.nc")
-    # dsg0 = xr.open_dataset("/data/tide/tpxo9v4a/netcdf/DATA/grid_tpxo9.v4a.nc")
+    dsg0 = xr.open_dataset("/data/tide/tpxo9v4a/netcdf/DATA/grid_tpxo9.v4a.nc")
 
     # Reading
     # dsh = read_otis_bin_h(hfile)
     # dsu = read_otis_bin_u(ufile)
-    # dsg = read_otis_bin_grid(gfile)
+    dsg = read_otis_bin_grid(gfile)
 
     # Writing
     # write_otis_bin_h("./hfile", dsh.hRe, dsh.hIm, dsh.con, dsh.lon_z, dsh.lat_z)
@@ -590,4 +634,3 @@ if __name__ == "__main__":
     # dsh1 = read_otis_bin_h("./hfile")
     # dsu1 = read_otis_bin_u("./ufile")
     # dsg1 = read_otis_bin_grid("./gfile")
-
