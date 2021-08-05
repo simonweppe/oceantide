@@ -243,26 +243,6 @@ def read_otis_bin_h(hfile):
     return dset
 
 
-def read_otis_bin_cons(hfile):
-    """Read constituents from otis binary file.
-
-    Args:
-        - hfile (str): Name of elevation constituents binary file to read.
-
-    Returns:
-        - cons (array 1d): Constituents with '|S4' dtype.
-
-    TODO: Deprecate.
-
-    """
-    with open(hfile, "rb") as f:
-        __, __, __, nc = np.fromfile(f, dtype=np.int32, count=4).byteswap(True)
-        np.fromfile(f, dtype=np.int32, count=4)[0]
-        cons = [np.fromfile(f, CHAR, 4).tobytes().upper() for i in range(nc)]
-        cons = np.array([c.ljust(4).lower() for c in cons])
-    return cons
-
-
 def read_otis_bin_grid(gfile):
     """Read grid data from otis binary file.
 
