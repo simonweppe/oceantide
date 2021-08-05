@@ -562,7 +562,6 @@ class Otis:
         for v in ["h", "u", "v"]:
             self.ds[f"{v}"] = self.ds[f"{v}Re"] + 1j * self.ds[f"{v}Im"]
             self.ds = self.ds.drop_vars([f"{v}Re", f"{v}Im"])
-        # self.ds = self.ds.rename({"h": "et", "u": "ut", "v": "vt"})
 
     def _to_single_grid(self):
         """Convert Arakawa into single grid at Z-nodes."""
@@ -614,30 +613,3 @@ class Otis:
         self._format_cons()
         self._to_complex()
         self._set_attributes()
-
-
-if __name__ == "__main__":
-
-    hfile = "/data/tide/tpxo9v4a/bin/DATA/h_tpxo9.v4a"
-    ufile = "/data/tide/tpxo9v4a/bin/DATA/u_tpxo9.v4a"
-    gfile = "/data/tide/tpxo9v4a/bin/DATA/grid_tpxo9.v4a"
-
-    # Original netcdf
-    # dsh0 = xr.open_dataset("/data/tide/tpxo9v4a/netcdf/DATA/h_tpxo9.v4a.nc")
-    # dsu0 = xr.open_dataset("/data/tide/tpxo9v4a/netcdf/DATA/u_tpxo9.v4a.nc")
-    dsg0 = xr.open_dataset("/data/tide/tpxo9v4a/netcdf/DATA/grid_tpxo9.v4a.nc")
-
-    # Reading
-    # dsh = read_otis_bin_h(hfile)
-    # dsu = read_otis_bin_u(ufile)
-    dsg = read_otis_bin_grid(gfile)
-
-    # Writing
-    # write_otis_bin_h("./hfile", dsh.hRe, dsh.hIm, dsh.con, dsh.lon_z, dsh.lat_z)
-    # write_otis_bin_u("./ufile", dsu.URe, dsu.UIm, dsu.VRe, dsu.VIm, dsu.con, dsh.lon_z, dsh.lat_z)
-    # write_otis_bin_grid("./gfile", dsg.hz, dsg.mz, dsh.lon_z, dsh.lat_z, dt=12)
-
-    # Reading written files
-    # dsh1 = read_otis_bin_h("./hfile")
-    # dsu1 = read_otis_bin_u("./ufile")
-    # dsg1 = read_otis_bin_grid("./gfile")

@@ -1,6 +1,7 @@
 """Tide xarray accessor."""
 import re
 import datetime
+import warnings
 import numpy as np
 import dask.array as da
 import pandas as pd
@@ -37,13 +38,13 @@ class Tide:
         """
         required_vars = ["h", "u", "v"]
         if not set(required_vars).issubset(self._obj.data_vars):
-            raise ValueError(
-                f"Tide accessor requires variables {required_vars} in dataset but "
-                f"only found {list(self._obj.data_vars.keys())}."
+            warnings.warn(
+                f"Tide accessor requires variables {required_vars} in dataset for full"
+                f" functionality but only found {list(self._obj.data_vars.keys())}."
             )
 
         for v in required_vars:
-            if not np.iscomplexobj(self._obj[v]):
+            if v in self._obj.data_vars and not np.iscomplexobj(self._obj[v]):
                 raise ValueError(f"Variable {v} must be complex type.")
 
         vars_dims = [self._obj[v].dims for v in required_vars]
