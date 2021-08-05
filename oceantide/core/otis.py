@@ -134,12 +134,10 @@ def read_otis_bin_u(ufile):
             - VRe: Real component of northward transport :math:`V_{Re}(nc,nx,ny)`.
             - VIm: Imag component of northward transport :math:`V_{Im}(nc,nx,ny)`.
 
-    TODO: Avoid transposing.
-
     """
     with open(ufile, "rb") as f:
-        ll, nx, ny, nc = np.fromfile(f, dtype=np.int32, count=4).byteswap(True)
-        y0, y1, x0, x1 = np.fromfile(f, dtype=np.float32, count=4).byteswap(True)
+        ll, nx, ny, nc = np.fromfile(f, dtype=INT, count=4)
+        y0, y1, x0, x1 = np.fromfile(f, dtype=FLOAT, count=4)
         cons = [np.fromfile(f, CHAR, 4).tobytes().upper() for i in range(nc)]
 
     URe = np.zeros((nc, ny, nx))
@@ -149,18 +147,17 @@ def read_otis_bin_u(ufile):
 
     for ic in range(nc):
         with open(ufile, "rb") as f:
-            np.fromfile(f, dtype=np.int32, count=4).byteswap(True)
-            np.fromfile(f, dtype=np.float32, count=4).byteswap(True)
+            np.fromfile(f, dtype=INT, count=4)
+            np.fromfile(f, dtype=FLOAT, count=4)
 
             nskip = int((ic) * (nx * ny * 16 + 8) + 8 + ll - 28)
             f.seek(nskip, 1)
-            data = np.fromfile(f, dtype=np.float32, count=4 * nx * ny).byteswap(True)
-            data = data.reshape((ny, 4 * nx))
+            data = np.fromfile(f, dtype=FLOAT, count=4 * nx * ny).reshape((ny, 4 * nx))
 
         URe[ic] = data[:, 0 : 4 * nx - 3 : 4]
         UIm[ic] = data[:, 1 : 4 * nx - 2 : 4]
         VRe[ic] = data[:, 2 : 4 * nx - 1 : 4]
-        VIm[ic] = data[:, 3 : 4 * nx : 4]
+        VIm[ic] = data[:, 3 : 4 * nx - 0 : 4]
 
     URe = URe.transpose((0, 2, 1))
     UIm = UIm.transpose((0, 2, 1))
@@ -206,12 +203,10 @@ def read_otis_bin_h(hfile):
             - hRe: Real component of tidal elevation :math:`h_{Re}(nc,nx,ny)`.
             - hIm: Imag component of tidal elevation :math:`h_{Im}(nc,nx,ny)`.
 
-    TODO: Avoid transposing.
-
     """
     with open(hfile, "rb") as f:
-        ll, nx, ny, nc = np.fromfile(f, dtype=np.int32, count=4).byteswap(True)
-        y0, y1, x0, x1 = np.fromfile(f, dtype=np.float32, count=4).byteswap(True)
+        ll, nx, ny, nc = np.fromfile(f, dtype=INT, count=4)
+        y0, y1, x0, x1 = np.fromfile(f, dtype=FLOAT, count=4)
         cons = [np.fromfile(f, CHAR, 4).tobytes().upper() for i in range(nc)]
 
     hRe = np.zeros((nc, ny, nx))
@@ -219,14 +214,13 @@ def read_otis_bin_h(hfile):
 
     for ic in range(nc):
         with open(hfile, "rb") as f:
-            np.fromfile(f, dtype=np.int32, count=4)
-            np.fromfile(f, dtype=np.float32, count=4)
+            np.fromfile(f, dtype=INT, count=4)
+            np.fromfile(f, dtype=FLOAT, count=4)
 
             nskip = int((ic) * (nx * ny * 8 + 8) + 8 + ll - 28)
             f.seek(nskip, 1)
 
-            data = np.fromfile(f, dtype=np.float32, count=2 * nx * ny).byteswap(True)
-            data = data.reshape((ny, 2 * nx))
+            data = np.fromfile(f, dtype=FLOAT, count=2 * nx * ny).reshape((ny, 2 * nx))
             hRe[ic] = data[:, 0 : 2 * nx - 1 : 2]
             hIm[ic] = data[:, 1 : 2 * nx : 2]
 
@@ -286,8 +280,6 @@ def read_otis_bin_grid(gfile):
             - hz: Depth :math:`hz(lat_z,lon_z)`.
             - mz: Mask :math:`mz(lat_z,lon_z)`.
 
-    TODO: Avoid transposing.
-
     """
     with open(gfile, "rb") as f:
 
@@ -301,15 +293,12 @@ def read_otis_bin_grid(gfile):
             iob = []
         else:
             f.seek(8, 1)
-            iob = np.fromfile(f, INT, count=int(2 * nob))
-            iob = iob.reshape((2, int(nob)))
+            iob = np.fromfile(f, INT, count=int(2 * nob)).reshape((2, int(nob)))
             f.seek(8, 1)
 
-        hz = np.fromfile(f, dtype=FLOAT, count=int(nx * ny))
-        hz = hz.reshape((ny, nx))
+        hz = np.fromfile(f, dtype=FLOAT, count=int(nx * ny)).reshape((ny, nx))
         f.seek(8, 1)
-        mz = np.fromfile(f, dtype=INT, count=int(nx * ny))
-        mz = mz.reshape((ny, nx))
+        mz = np.fromfile(f, dtype=INT, count=int(nx * ny)).reshape((ny, nx))
 
     hz = hz.transpose()
     mz = mz.transpose()
@@ -323,6 +312,7 @@ def read_otis_bin_grid(gfile):
     dset["lat_z"] = xr.DataArray(da.from_array(lat_z), dims=("nx", "ny"))
     dset["hz"] = xr.DataArray(da.from_array(hz), dims=("nx", "ny"))
     dset["mz"] = xr.DataArray(da.from_array(mz), dims=("nx", "ny"))
+    dset["iob_z"] = xr.DataArray(da.from_array(iob), dims=("iiob", "nob_z"))
 
     # Attributes
     set_attributes(dset, "otis")
@@ -582,20 +572,22 @@ if __name__ == "__main__":
     gfile = "/data/tide/tpxo9v4a/bin/DATA/grid_tpxo9.v4a"
 
     # Original netcdf
-    dsg0 = xr.open_dataset("/data/tide/tpxo9v4a/netcdf/DATA/grid_tpxo9.v4a.nc")
+    # dsh0 = xr.open_dataset("/data/tide/tpxo9v4a/netcdf/DATA/h_tpxo9.v4a.nc")
+    # dsu0 = xr.open_dataset("/data/tide/tpxo9v4a/netcdf/DATA/u_tpxo9.v4a.nc")
+    # dsg0 = xr.open_dataset("/data/tide/tpxo9v4a/netcdf/DATA/grid_tpxo9.v4a.nc")
 
     # Reading
-    dsh = read_otis_bin_h(hfile)
+    # dsh = read_otis_bin_h(hfile)
     # dsu = read_otis_bin_u(ufile)
-    dsg = read_otis_bin_grid(gfile)
+    # dsg = read_otis_bin_grid(gfile)
 
     # Writing
     # write_otis_bin_h("./hfile", dsh.hRe, dsh.hIm, dsh.con, dsh.lon_z, dsh.lat_z)
     # write_otis_bin_u("./ufile", dsu.URe, dsu.UIm, dsu.VRe, dsu.VIm, dsu.con, dsh.lon_z, dsh.lat_z)
-    write_otis_bin_grid("./gfile", dsg.hz, dsg.mz, dsh.lon_z, dsh.lat_z, dt=12)
+    # write_otis_bin_grid("./gfile", dsg.hz, dsg.mz, dsh.lon_z, dsh.lat_z, dt=12)
 
     # Reading written files
     # dsh1 = read_otis_bin_h("./hfile")
     # dsu1 = read_otis_bin_u("./ufile")
-    dsg1 = read_otis_bin_grid("./gfile")
+    # dsg1 = read_otis_bin_grid("./gfile")
 
