@@ -499,45 +499,84 @@ def write_otis_bin_grid(gfile, hz, mz, lon, lat, dt=12):
         delim.tofile(fid)
 
 
-def from_otis(dset):
-    """Format Otis-like dataset to implement the oceantide accessor."""
-    otis = Otis(dset)
-    return otis.ds
+def otis_to_oceantide(dsg, dsh, dsu):
+    """Convert otis datasets into oceantide format."""
+    otis = Otis(dsg, dsh, dsu)
+    ds = otis()
+    return ds
 
 
 class Otis:
-    """Otis object formatter."""
+    """Otis object formatter.
 
-    def __init__(self, dset_otis):
-        self.ds = dset_otis
-        self.validate()
-        self.construct()
+    Args:
+        dsg (Dataset): Otis grid dataset.
+        dsh (Dataset): Otis elevation dataset.
+        dsu (Dataset): Otis transports dataset.
+
+    """
+
+    def __init__(self, dsg, dsh, dsu):
+        self.dsg = dsg
+        self.dsh = dsh
+        self.dsu = dsu
 
     def __repr__(self):
         return re.sub(r"<.+>", f"<{self.__class__.__name__}>", str(self.ds))
 
-    def _fix_topo(self):
-        """Make topography values above zero as they are inconveniently zero."""
-        self.ds["hz"] = self.ds["hz"].where(self.ds["hz"] != 0).fillna(0.001)
-        self.ds["hu"] = self.ds["hu"].where(self.ds["hu"] != 0).fillna(0.001)
-        self.ds["hv"] = self.ds["hv"].where(self.ds["hv"] != 0).fillna(0.001)
+    def __call__(self):
+        self.validate()
+        self.construct()
+        return self.ds
 
-    def _mask_vars(self):
-        """Mask land in constituents to avoid zero values."""
-        for data_var in self.ds.data_vars.values():
-            if len(data_var.dims) > 2:
-                data_var = data_var.where(data_var != 0)
+    def _merge_otis_datasets(self):
+        """Combine h, u and grid datasets into single dataset."""
+        dsg = self.dsg.transpose("ny", "nx", ...)
+        dsh = self.dsh.transpose("nc", "ny", "nx", ...)
+        dsu = self.dsu.transpose("nc", "ny", "nx", ...)
+
+        mz = dsg.mz.rename({"nx": "lon_z", "ny": "lat_z"})
+        mu = dsg.mu.rename({"nx": "lon_u", "ny": "lat_u"})
+        mv = dsg.mv.rename({"nx": "lon_v", "ny": "lat_v"})
+
+        URe = dsu.URe.rename({"nc": "con", "nx": "lon_u", "ny": "lat_u"}).where(mu)
+        UIm = dsu.UIm.rename({"nc": "con", "nx": "lon_u", "ny": "lat_u"}).where(mu)
+        VRe = dsu.VRe.rename({"nc": "con", "nx": "lon_v", "ny": "lat_v"}).where(mv)
+        VIm = dsu.VIm.rename({"nc": "con", "nx": "lon_v", "ny": "lat_v"}).where(mv)
+
+        self.ds = xr.Dataset(
+            coords={
+                "con": dsh.con.rename({"nc": "con"}),
+                "lon_z": dsh.lon_z.isel(ny=0).rename({"nx": "lon_z"}),
+                "lat_z": dsh.lat_z.isel(nx=0).rename({"ny": "lat_z"}),
+                "lon_u": dsu.lon_u.isel(ny=0).rename({"nx": "lon_u"}),
+                "lat_u": dsu.lat_u.isel(nx=0).rename({"ny": "lat_u"}),
+                "lon_v": dsu.lon_v.isel(ny=0).rename({"nx": "lon_v"}),
+                "lat_v": dsu.lat_v.isel(nx=0).rename({"ny": "lat_v"}),
+            },
+        )
+        self.ds["hz"] = dsg.hz.rename({"nx": "lon_z", "ny": "lat_z"}).where(mz)
+        self.ds["hu"] = dsg.hu.rename({"nx": "lon_u", "ny": "lat_u"}).where(mu)
+        self.ds["hv"] = dsg.hv.rename({"nx": "lon_v", "ny": "lat_v"}).where(mv)
+        self.ds["hRe"] = dsh.hRe.rename({"nc": "con", "nx": "lon_z", "ny": "lat_z"}).where(mz)
+        self.ds["hIm"] = dsh.hIm.rename({"nc": "con", "nx": "lon_z", "ny": "lat_z"}).where(mz)
+        self.ds["uRe"] = URe / self.ds["hu"]
+        self.ds["uIm"] = UIm / self.ds["hu"]
+        self.ds["vRe"] = VRe / self.ds["hv"]
+        self.ds["vIm"] = VIm / self.ds["hv"]
+        self.ds["con"] = self.ds.con.astype("S4")
+
+        self.ds = self.ds.where(self.ds < 1e10)
 
     def _to_complex(self):
         """Merge real and imaginary components into a complex variable."""
         for v in ["h", "u", "v"]:
             self.ds[f"{v}"] = self.ds[f"{v}Re"] + 1j * self.ds[f"{v}Im"]
             self.ds = self.ds.drop_vars([f"{v}Re", f"{v}Im"])
-        self.ds = self.ds.drop_vars(["URe", "UIm", "VRe", "VIm"])
         self.ds = self.ds.rename({"h": "et", "u": "ut", "v": "vt"})
 
     def _to_single_grid(self):
-        """Convert Arakawa into a common grid at the cell centre."""
+        """Convert Arakawa into single grid at Z-nodes."""
         lat = self.ds.lat_z
         lon = self.ds.lon_z
 
@@ -588,21 +627,21 @@ class Otis:
 
     def validate(self):
         """Check that input dataset has all requirements."""
-        complexes = ["hRe", "hIm", "uRe", "uIm", "vRe", "vIm"]
-        for v in complexes:
-            if v not in self.ds.data_vars:
-                raise ValueError(f"Variable {v} is required in Otis dataset.")
-        reais = ["hz", "hu", "hv"]
-        for v in reais:
-            if v not in self.ds.data_vars:
-                raise ValueError(f"Variable {v} is required in Otis dataset.")
-        if self.ds.con.dtype != np.dtype("S4"):
+        for v in ["hRe", "hIm"]:
+            if v not in self.dsh.data_vars:
+                raise ValueError(f"Variable {v} required in elevation dataset dsh.")
+        for v in ["URe", "UIm", "VRe", "VIm"]:
+            if v not in self.dsu.data_vars:
+                raise ValueError(f"Variable {v} required in transports dataset dsu.")
+        for v in ["hz", "hu", "hv", "mz", "mu", "mv"]:
+            if v not in self.dsg.data_vars:
+                raise ValueError(f"Variable {v} required in grid dataset dsg.")
+        if self.dsh.con.dtype != np.dtype("S4"):
             raise ValueError(f"Constituents variables dtype must be 'S4'.")
 
     def construct(self):
         """Define constituents dataset."""
-        self._fix_topo()
-        self._mask_vars()
+        self._merge_otis_datasets()
         self._to_single_grid()
         self._format_cons()
         self._to_complex()
