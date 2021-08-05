@@ -31,6 +31,38 @@ def from_otis(dset):
     return otis.ds
 
 
+def theta_lim(lon, lat):
+    """Grid limits (y0, y1, x0, x1).
+
+    Args:
+        - lon (DataArray, 1darray): Longitude coordinates at the cell centre (Z-nodes).
+        - lat (DataArray, 1darray): Latitude coordinates at the cell centre (Z-nodes).
+
+    Return:
+        - theta_lim (1darray): Grid limits with dtype for writing to binary file.
+
+    """
+    if lon.ndim > 1:
+        if np.sum(np.diff(lon[:, 0])) != 0:
+            lon = lon[:, 0]
+        else:
+            lon = lon[0, :]
+    if lat.ndim > 1:
+        if np.sum(np.diff(lat[0, :])) != 0:
+            lat = lat[0, :]
+        else:
+            lat = lat[:, 0]
+    dx = lon[1] - lon[0]
+    dy = lat[1] - lat[0]
+    if dx == 0 or dy == 0:
+        raise ValueError(f"Longitude or latitude values are all equal")
+    x0 = float(lon[0] - dx / 2)
+    x1 = float(lon[-1] + dx / 2)
+    y0 = float(lat[0] - dy / 2)
+    y1 = float(lat[-1] + dy / 2)
+    return np.hstack([y0, y1, x0, x1]).astype(FLOAT)
+
+
 def indices_open_boundary(mz):
     """Indices of open boundary iob.
 
@@ -57,7 +89,7 @@ def indices_open_boundary(mz):
     iob = xr.concat([dsl, dst, dsr, dsb], dim="n")
     iob = iob.where(iob == 1, drop=True)
 
-    return np.array([iob.nx.values, iob.ny.values])
+    return np.array([iob.nx.values, iob.ny.values], dtype=INT)
 
 
 def otis_filenames(filename):
@@ -307,59 +339,44 @@ def write_otis_bin_u(ufile, URe, UIm, VRe, VIm, con, lon, lat):
 
     Args:
         - ufile (str): Name of transports binary constituents file to write.
-        - URe (DataArray, 3darray): Real eastward velocity :math:`\\Re{u}(nc,nx,ny)`.
-        - UIm (DataArray, 3darray): Imag eastward velocity :math:`\\Im{u}(nc,nx,ny)`.
-        - VRe (DataArray, 3darray): Real northward velocity :math:`\\Re{v}(nc,nx,ny)`.
-        - VIm (DataArray, 3darray): Imag northward velocity :math:`\\Im{v}(nc,nx,ny)`.
+        - URe (DataArray, 3darray): Real eastward transport :math:`\\Re{U}(nc,nx,ny)`.
+        - UIm (DataArray, 3darray): Imag eastward transport :math:`\\Im{U}(nc,nx,ny)`.
+        - VRe (DataArray, 3darray): Real northward transport :math:`\\Re{V}(nc,nx,ny)`.
+        - VIm (DataArray, 3darray): Imag northward transport :math:`\\Im{V}(nc,nx,ny)`.
         - con (1darray): Constituents names (lowercase).
         - lon (DataArray, 1darray): Longitude coordinates at the cell centre (Z-nodes).
         - lat (DataArray, 1darray): Latitude coordinates at the cell centre (Z-nodes).
 
     Note:
         - Arrays must have shape consistent with Otis convention :math:`(nc,nx,ny)`.
-        - lon and lat can be 1d or 2d arrays.
+        - Coordinates lon and lat can be 1d or 2d arrays.
 
     """
     nc, nx, ny = URe.shape
 
-    # Standarise coordinates
-    con = con.astype("S")
-    if lon.ndim > 1:
-        lon = lon[:, 0]
-    if lat.ndim > 1:
-        lat = lat[0, :]
-
-    # Header variables
-    dx = lon[1] - lon[0]
-    dy = lat[1] - lat[0]
-    x0 = float(lon[0] - dx / 2)
-    x1 = float(lon[-1] + dx / 2)
-    y0 = float(lat[0] - dy / 2)
-    y1 = float(lat[-1] + dy / 2)
-    theta_lim = np.hstack([y0, y1, x0, x1]).astype(FLOAT)
-    header1 = np.array(4 * (nc + 7), dtype=INT)
-    header2 =  np.array(2 * 8 * nx * ny, dtype=INT)
-
     with open(ufile, "wb") as fid:
+
         # Header
-        header1.tofile(fid)
+        delim = np.array(4 * (nc + 7), dtype=INT)
+        delim.tofile(fid)
         np.array(nx, dtype=INT).tofile(fid)
         np.array(ny, dtype=INT).tofile(fid)
         np.array(nc, dtype=INT).tofile(fid)
-        theta_lim.tofile(fid)
+        theta_lim(lon, lat).tofile(fid)
         con.values.astype("S4").tofile(fid)
-        header1.tofile(fid)
+        delim.tofile(fid)
 
         # Records
+        delim = np.array(2 * 8 * nx * ny, dtype=INT)
         for ic in range(nc):
-            header2.tofile(fid)
+            delim.tofile(fid)
             data = np.zeros((ny, nx * 4))
             data[:, 0 : 4 * nx - 3 : 4] = URe[ic].T
             data[:, 1 : 4 * nx - 2 : 4] = UIm[ic].T
             data[:, 2 : 4 * nx - 1 : 4] = VRe[ic].T
             data[:, 3 : 4 * nx - 0 : 4] = VIm[ic].T
             data.astype(FLOAT).tofile(fid)
-            header2.tofile(fid)
+            delim.tofile(fid)
 
 
 def write_otis_bin_h(hfile, hRe, hIm, con, lon, lat):
@@ -375,47 +392,83 @@ def write_otis_bin_h(hfile, hRe, hIm, con, lon, lat):
 
     Note:
         - Arrays must have shape consistent with Otis convention :math:`(nc,nx,ny)`.
-        - lon and lat can be 1d or 2d arrays.
+        - Coordinates lon and lat can be 1d or 2d arrays.
 
     """
     nc, nx, ny = hRe.shape
 
-    # Standarise coordinates
-    con = con.astype("S")
-    if lon.ndim > 1:
-        lon = lon[:, 0]
-    if lat.ndim > 1:
-        lat = lat[0, :]
-
-    # Header variables
-    dx = lon[1] - lon[0]
-    dy = lat[1] - lat[0]
-    x0 = float(lon[0] - dx / 2)
-    x1 = float(lon[-1] + dx / 2)
-    y0 = float(lat[0] - dy / 2)
-    y1 = float(lat[-1] + dy / 2)
-    theta_lim = np.hstack([y0, y1, x0, x1]).astype(FLOAT)
-    header1 = np.array(4 * (nc + 7), dtype=INT)
-    header2 =  np.array(8 * nx * ny, dtype=INT)
-
     with open(hfile, "wb") as fid:
+
         # Header
-        header1.tofile(fid)
+        delim = np.array(4 * (nc + 7), dtype=INT)
+        delim.tofile(fid)
         np.array(nx, dtype=INT).tofile(fid)
         np.array(ny, dtype=INT).tofile(fid)
         np.array(nc, dtype=INT).tofile(fid)
-        theta_lim.tofile(fid)
+        theta_lim(lon, lat).tofile(fid)
         con.values.astype("S4").tofile(fid)
-        header1.tofile(fid)
+        delim.tofile(fid)
 
         # Records
+        delim = np.array(8 * nx * ny, dtype=INT)
         for ic in range(nc):
-            header2.tofile(fid)
+            delim.tofile(fid)
             data = np.zeros((ny, nx * 2))
             data[:, 0 : 2 * nx - 1 : 2] = hRe[ic].T
             data[:, 1 : 2 * nx - 0 : 2] = hIm[ic].T
             data.astype(FLOAT).tofile(fid)
-            header2.tofile(fid)
+            delim.tofile(fid)
+
+
+def write_otis_bin_grid(gfile, hz, mz, lon, lat, dt=12):
+    """Write grid data in the otis binary file.
+
+    Args:
+        - gfile (str): Name of grid binary file to write.
+        - hz (DataArray, 2darray): Water depth at Z-nodes :math:`h(nx,ny)`.
+        - mz (DataArray, 2darray): Land mask at Z-nodes :math:`m(nx,ny)`.
+        - lon (DataArray, 1darray): Longitude coordinates at the cell centre (Z-nodes).
+        - lat (DataArray, 1darray): Latitude coordinates at the cell centre (Z-nodes).
+
+    Note:
+        - Arrays must have shape consistent with Otis convention :math:`(nc,nx,ny)`.
+        - Coordinates lon and lat can be 1d or 2d arrays.
+
+    """
+    nx, ny = hz.shape
+    iob = indices_open_boundary(mz)
+    nob = iob.shape[1]
+
+    with open(gfile, "wb") as fid:
+
+        # Header
+        delim = np.array(32, dtype=INT)
+        delim.tofile(fid)
+        np.array([nx, ny], dtype=INT).tofile(fid)
+        theta_lim(lon, lat).tofile(fid)
+        np.array(dt, dtype=FLOAT).tofile(fid)
+        np.array(nob, dtype=INT).tofile(fid)
+        delim.tofile(fid)
+
+        # Indices open boundaries
+        delim = np.array(8 * nob, dtype=INT)
+        if nob == 0:
+            np.array([4, 0, 4], dtype=INT).tofile(fid)
+        else:
+            delim.tofile(fid)
+            iob.tofile(fid)
+            delim.tofile(fid)
+
+        # Water depth
+        delim = np.array(4 * nx * ny, dtype=INT)
+        delim.tofile(fid)
+        hz.fillna(0.).values.T.astype(FLOAT).tofile(fid)
+        delim.tofile(fid)
+
+        # Land mask
+        delim.tofile(fid)
+        mz.fillna(1.).values.T.astype(INT).tofile(fid)
+        delim.tofile(fid)
 
 
 class Otis:
@@ -532,17 +585,17 @@ if __name__ == "__main__":
     dsg0 = xr.open_dataset("/data/tide/tpxo9v4a/netcdf/DATA/grid_tpxo9.v4a.nc")
 
     # Reading
-    # dsh = read_otis_bin_h(hfile)
+    dsh = read_otis_bin_h(hfile)
     # dsu = read_otis_bin_u(ufile)
     dsg = read_otis_bin_grid(gfile)
 
     # Writing
     # write_otis_bin_h("./hfile", dsh.hRe, dsh.hIm, dsh.con, dsh.lon_z, dsh.lat_z)
     # write_otis_bin_u("./ufile", dsu.URe, dsu.UIm, dsu.VRe, dsu.VIm, dsu.con, dsh.lon_z, dsh.lat_z)
+    write_otis_bin_grid("./gfile", dsg.hz, dsg.mz, dsh.lon_z, dsh.lat_z, dt=12)
 
     # Reading written files
     # dsh1 = read_otis_bin_h("./hfile")
     # dsu1 = read_otis_bin_u("./ufile")
+    dsg1 = read_otis_bin_grid("./gfile")
 
-
-    iob = indices_open_boundary(dsg0.mz)
