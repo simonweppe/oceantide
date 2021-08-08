@@ -55,7 +55,7 @@ def read_otis_atlas_netcdf(filename, nxchunk=500, nychunk=500):
     return dset
 
 
-def read_grid(filename, chunks={"nx": 1000, "ny": 1000}):
+def read_grid(filename, chunks):
     """Read grid netcdf files.
 
     Args:
@@ -83,7 +83,7 @@ def read_grid(filename, chunks={"nx": 1000, "ny": 1000}):
     return dset
 
 
-def read_elevations(filenames, chunks={"nx": 1000, "ny": 1000}):
+def read_elevations(filenames, chunks):
     """Read and concatenate individual elevations constituents netcdf files.
 
     Args:
@@ -104,7 +104,7 @@ def read_elevations(filenames, chunks={"nx": 1000, "ny": 1000}):
     return xr.concat(dsets, dim="nc").chunk({"nc": None})
 
 
-def read_transports(filenames, chunks={"nx": 1000, "ny": 1000}):
+def read_transports(filenames, chunks):
     """Read and concatenate individual transports constituents netcdf files.
 
     Args:
@@ -130,41 +130,33 @@ def read_transports(filenames, chunks={"nx": 1000, "ny": 1000}):
 
 if __name__ == "__main__":
 
+    import itertools
+    import datetime
+    from dask.diagnostics.progress import ProgressBar
+
+    def chunked_iterable(iterable, size):
+        it = iter(iterable)
+        while True:
+            chunk = tuple(itertools.islice(it, size))
+            if not chunk:
+                break
+            yield chunk
+
     filename = "/data/tide/tpxo9v4_atlas/TPXO9_atlas_nc"
-    dset = read_otis_atlas_netcdf(filename)
+    dset = read_otis_atlas_netcdf(filename, nxchunk=50, nychunk=50)
 
-    # import itertools
-    # import datetime
-    # from dask.diagnostics.progress import ProgressBar
-
-    # def chunked_iterable(iterable, size):
-    #     it = iter(iterable)
-    #     while True:
-    #         chunk = tuple(itertools.islice(it, size))
-    #         if not chunk:
-    #             break
-    #         yield chunk
-
-    # filename = "/data/tide/tpxo9_atlas_nc"
-    # dset = read_otis_atlas_netcdf(filename)
-
-    # outdir = "./tpxo9-atlas_v9_zarr_slices"
-    # encoding = {v: {"dtype": "int32", "scale_factor": 1e-3, "_FillValue": -32767} for v in dset.data_vars}
-    # encoding.update({v: {"chunks": (dset[v].size,)} for v in dset.coords})
-
-    # # size = 50
-    # # for ind in chunked_iterable(range(dset.lon.size), size=size):
-    # #     i0 = ind[0]
-    # #     print(f"Writing lon chunk {i0}")
-    # #     filename = os.path.join(outdir, f"slice_{i0:05.0f}.zarr")
-    # #     ds = dset.isel(lon=list(ind))
-    # #     # import ipdb; ipdb.set_trace()
-    # #     with ProgressBar():
-    # #         if i0 == 0:
-    # #             append_dim = None
-    # #         else:
-    # #             append_dim = "lon"
-    # #         ds.to_zarr(filename, consolidated=True, append_dim=append_dim, encoding=encoding)
+    size = 50
+    for ind in chunked_iterable(range(dset.lon.size), size=size):
+        i0 = ind[0]
+        print(f"Writing lon chunk {i0}")
+        filename = "atlas.zarr"
+        with ProgressBar():
+            ds = dset.isel(lon=list(ind)).load()
+        if i0 == 0:
+            append_dim = None
+        else:
+            append_dim = "lon"
+        ds.to_zarr(filename, mode="w", consolidated=True, append_dim=append_dim)
 
     # # eta = dset.tide.predict(times=[datetime.datetime(2012, 1, 1, 0)])
     # # eta = dset.sel(lon=289.52, lat=41.05, method="nearest").tide.predict(
