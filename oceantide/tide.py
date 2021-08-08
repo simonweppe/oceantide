@@ -1,5 +1,11 @@
 """Tide xarray accessor."""
+import os
 import re
+import glob
+import types
+from pathlib import Path
+from importlib import import_module
+from inspect import getmembers, isfunction
 import datetime
 import warnings
 import numpy as np
@@ -11,8 +17,24 @@ from oceantide.core.utils import nodal, set_attributes
 from oceantide.constituents import OMEGA
 
 
+HERE = Path(__file__).parent
+
+
+class Plugin(type):
+    """Add output functions as bound methods at class creation."""
+
+    def __new__(cls, name, bases, dct):
+        module_names = [f.replace(".py", "") for f in glob.glob1(os.path.join(HERE, "output"), "*.py")]
+        modules = [import_module(f"oceantide.output.{name}") for name in module_names]
+        for module_name, module in zip(module_names, modules):
+            for func_name, func in getmembers(module, isfunction):
+                if func_name == f"to_{module_name}":
+                    dct[func_name] = func
+        return type.__new__(cls, name, bases, dct)
+
+
 @xr.register_dataset_accessor("tide")
-class Tide:
+class Tide(metaclass=Plugin):
     """Xarray accessor object to process tide constituents dataset."""
 
     def __init__(self, xarray_obj):
