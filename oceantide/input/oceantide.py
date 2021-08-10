@@ -44,6 +44,6 @@ def read_oceantide(filename=None, engine="zarr", backend_kwargs={"consolidated":
             "variables ['dep','h','u','v'] will be supported in the future.",
             category=FutureWarning,
         )
-    dset = dset.rename({"et": "h", "ut": "u", "vt": "v", "depth": "dep"})
+        dset = dset.rename({"et": "h", "ut": "u", "vt": "v", "depth": "dep"})
 
     return dset
