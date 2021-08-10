@@ -156,7 +156,7 @@ class Tide(metaclass=Plugin):
         if isinstance(times, datetime.datetime):
             times = [times]
         if isinstance(times, (list, tuple, np.ndarray, pd.DatetimeIndex)):
-            seconds_array = pd.array(times).astype(int) / 1e9 - 694224000
+            seconds_array = pd.array(times).view(int) / 1e9 - 694224000
             tsec = xr.DataArray(
                 data=seconds_array,
                 coords={"time": times},
