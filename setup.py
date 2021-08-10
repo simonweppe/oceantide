@@ -15,7 +15,9 @@ requirements = [
     "dask",
     "netCDF4",
     "numpy",
+    "scipy",
     "xarray",
+    "zarr",
 ]
 
 setup_requirements = [
