@@ -11,7 +11,8 @@ from oceantide.core.otis import otis_to_oceantide
 from oceantide.tide import Tide
 
 
-# dask.config.set({"array.slicing.split_large_chunks": False})
+dask.config.set({"array.slicing.split_large_chunks": False})
+
 CONS = [
     "M2",
     "S2",
@@ -31,16 +32,16 @@ CONS = [
 ]
 
 
-def read_otis_atlas_netcdf(filename, x0=None, x1=None, y0=None, y1=None, nxchunk=500, nychunk=500):
+def read_otis_atlas_netcdf(dirname, x0=None, x1=None, y0=None, y1=None, nxchunk=500, nychunk=500):
     """Read Otis Netcdf file format.
 
     Args:
-        - filename (str): Path name with all netcdf Atlas files. Atlas files are
-          organised as one single file per constituent for u and h and one grid file.
+        - dirname (str): Path name with all netcdf Atlas files. Atlas files are
+          organised as one grid file and one file per constituent for uv and h.
         - x0 (float): Longitude left corner to read.
         - x1 (float): Longitude right corner to read.
-        - y0 (float): Latitude left corner to read.
-        - y1 (float): Latitude right corner to read.
+        - y0 (float): Latitude bottom corner to read.
+        - y1 (float): Latitude top corner to read.
         - nxchunk (int): Chunk size along the x-axis.
         - nychunk (int): Chunk size along the y-axis.
 
@@ -53,14 +54,14 @@ def read_otis_atlas_netcdf(filename, x0=None, x1=None, y0=None, y1=None, nxchunk
         - It is a good idea setting nxchunk, nychunk close to the slicing sizes.
 
     """
-    gfile = list(Path(filename).glob("g*.nc"))[0]
-    hfile = Path(filename).glob("h*.nc")
-    ufile = Path(filename).glob("u*.nc")
+    gfile = list(Path(dirname).glob("g*.nc"))[0]
+    hfile = Path(dirname).glob("h*.nc")
+    ufile = Path(dirname).glob("u*.nc")
 
     if not hfile:
-        raise ValueError(f"Cannot find elevation constituents files from {filename}")
+        raise ValueError(f"Cannot find elevation constituents files from {dirname}")
     if not ufile:
-        raise ValueError(f"Cannot find transport constituents files from {filename}")
+        raise ValueError(f"Cannot find transport constituents files from {dirname}")
 
     bounds = {"x0": x0, "x1": x1, "y0": y0, "y1": y1}
     dsg = read_grid(gfile, chunks={"nx": nxchunk, "ny": nychunk}, **bounds)
