@@ -496,7 +496,7 @@ def write_otis_bin_h(hfile, hRe, hIm, con, lon, lat):
         np.array(ny, dtype=INT).tofile(fid)
         np.array(nc, dtype=INT).tofile(fid)
         theta_lim(lon, lat).tofile(fid)
-        con.values.astype("S4").tofile(fid)
+        np.array([f"{c:4s}" for c in con.values], dtype="S4").tofile(fid)
         delim.tofile(fid)
 
         # Records
