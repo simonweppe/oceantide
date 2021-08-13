@@ -5,7 +5,6 @@ import numpy as np
 import dask.array as da
 import xarray as xr
 
-from oceantide.tide import Tide
 from oceantide.core.utils import arakawa_grid, set_attributes
 
 
