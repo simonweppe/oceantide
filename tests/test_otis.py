@@ -41,3 +41,10 @@ def test_binary_otis_io(tmpdir):
     # Grid files are different due to wrong iob in original files but values are set when reading
     dsg1 = read_otis_bin_grid(gfile1)
     assert dsg.identical(dsg1)
+
+def test_otis_binary_writer_plugin(tmpdir):
+    "Test output otis binary plugin."
+    dset = read_otis_netcdf("/data/tide/tpxo9v4a/netcdf/DATA/Model_tpxo9v4a")
+    dset = dset.isel(lon=slice(None, None, 10), lat=slice(None, None, 10)).load()
+    filenames = dset.tide.to_otis_binary(tmpdir, hfile=True, ufile=True, gfile=True)
+    print(filenames)
