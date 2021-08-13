@@ -1,15 +1,4 @@
-"""Otis object.
-
-Grid conventions used in OTIS
------------------------------
-An Arakawa C grid is used for all dynamical calculations. Volume transports U and V are
-specified on grid cell edges, and are interpreted to be the average volume transport
-over the cell edge. Elevations are interpreted as the average over the cell, and are
-given at the center. Boundary conditions at the coast are specified on the U and V
-nodes. Open boundary conditions are given by specifying the elevation for open boundary
-edge cells, or transports on edge U or V nodes
-
-"""
+"""Otis core functions."""
 import os
 import re
 import numpy as np
@@ -84,6 +73,104 @@ def indices_open_boundary(mz):
     iob = iob.where(iob == 1, drop=True)
 
     return np.array([iob.nx.values, iob.ny.values], dtype=INT)
+
+
+def u_from_z(dz, mz=None, mu=None):
+    """Interpolate data from Z-nodes onto U-Nodes.
+
+    Args:
+        - dz (DataArray): Data at Z-nodes to interpolate :math:`d_z(...,nx,ny)`.
+        - mz (DataArray): Land mask at Z-nodes :math:`m_z(nx,ny)`.
+        - mu (DataArray): Land mask at U-nodes :math:`m_u(nx,ny)`.
+
+    Returns:
+        - du (DataArray): Data interpolated at U-nodes :math:`d_u(...,nx,ny)`.
+
+    Note:
+        - Masks should be defined by 0 over land and either 1 or nan over water.
+        - If mz is not provided it is defined from missing values in dz.
+        - If mu is not provided it is interpolated from mz.
+
+    """
+    if mz is None:
+        mz = xr.where(dz.isnull(), 0.0, 1.0)
+    if mu is None:
+        mu = mz * mz.roll(nx=1, roll_coords=False)
+    iku = (mz.fillna(1.) + mz.fillna(1.).roll(nx=1, roll_coords=False)) == 1
+    du = mu.fillna(1.) * (dz + dz.roll(nx=1, roll_coords=False)) / 2
+    du = xr.where(iku, dz, du)
+    return du
+
+
+def v_from_z(dz, mz=None, mv=None):
+    """Interpolate data from Z-nodes onto V-Nodes.
+
+    Args:
+        - dz (DataArray): Data at Z-nodes to interpolate :math:`d_z(...,nx,ny)`.
+        - mz (DataArray): Land mask at Z-nodes :math:`m_z(nx,ny)`.
+        - mv (DataArray): Land mask at V-nodes :math:`m_v(nx,ny)`.
+
+    Returns:
+        - dv (DataArray): Data interpolated at V-nodes :math:`d_v(...,nx,ny)`.
+
+    Note:
+        - Masks should be defined by 0 over land and either 1 or nan over water.
+        - If mz is not provided it is defined from missing values in dz.
+        - If mv is not provided it is interpolated from mz.
+
+    """
+    if mz is None:
+        mz = xr.where(dz.isnull(), 0.0, 1.0)
+    if mv is None:
+        mv = mz * mz.roll(ny=1, roll_coords=False)
+    ikv = (mz.fillna(1.) + mz.fillna(1.).roll(ny=1, roll_coords=False)) == 1
+    dv = mv.fillna(1.) * (dz + dz.roll(ny=1, roll_coords=False)) / 2
+    dv = xr.where(ikv, dz, dv)
+    return dv
+
+
+def z_from_u(du, mu=None, mz=None):
+    """Interpolate data from U-nodes onto Z-nodes.
+
+    Args:
+        - du (DataArray): Data at U-nodes to interpolate :math:`d_u(...,nx,ny)`.
+        - mu (DataArray): Land mask at U-nodes :math:`m_u(nx,ny)`.
+        - mz (DataArray): Land mask at Z-nodes :math:`m_z(nx,ny)`.
+
+    Returns:
+        - dz (DataArray): Data interpolated at Z-nodes :math:`d_z(...,nx,ny)`.
+
+    """
+    if mu is None:
+        mu = xr.where(du.isnull(), 0.0, 1.0)
+    if mz is None:
+        mz = mu * mu.roll(nx=-1, roll_coords=False)
+    ikz = (mu.fillna(1.) + mu.fillna(1.).roll(nx=-1, roll_coords=False)) == 1
+    dz = mz.fillna(1.) * (du + du.roll(nx=-1, roll_coords=False)) / 2
+    dz = xr.where(ikz, du, dz)
+    return dz
+
+
+def z_from_v(dv, mv=None, mz=None):
+    """Interpolate data from V-nodes onto Z-nodes.
+
+    Args:
+        - dv (DataArray): Data at V-nodes to interpolate :math:`d_v(...,nx,ny)`.
+        - mv (DataArray): Land mask at V-nodes :math:`m_v(nx,ny)`.
+        - mz (DataArray): Land mask at Z-nodes :math:`m_z(nx,ny)`.
+
+    Returns:
+        - dz (DataArray): Data interpolated at Z-nodes :math:`d_z(...,nx,ny)`.
+
+    """
+    if mv is None:
+        mv = xr.where(dv.isnull(), 0.0, 1.0)
+    if mz is None:
+        mz = mv * mv.roll(ny=-1, roll_coords=False)
+    ikz = (mv.fillna(1.) + mv.fillna(1.).roll(ny=-1, roll_coords=False)) == 1
+    dz = mz.fillna(1.) * (dv + dv.roll(ny=-1, roll_coords=False)) / 2
+    dz = xr.where(ikz, dv, dz)
+    return dz
 
 
 def otis_filenames(filename):
@@ -319,12 +406,8 @@ def read_otis_bin_grid(gfile):
 
     # Depth
     dset["hz"] = xr.DataArray(da.from_array(hz), dims=("nx", "ny")).astype("float64")
-    iku = (dset.mz + dset.mz.roll(nx=1, roll_coords=False)) == 1
-    ikv = (dset.mz + dset.mz.roll(ny=1, roll_coords=False)) == 1
-    hu = dset.mu * (dset.hz + dset.hz.roll(nx=1, roll_coords=False)) / 2
-    hv = dset.mv * (dset.hz + dset.hz.roll(ny=1, roll_coords=False)) / 2
-    dset["hu"] = xr.where(iku, dset.hz, hu)
-    dset["hv"] = xr.where(ikv, dset.hz, hv)
+    dset["hu"] = u_from_z(dset.hz, dset.mz, dset.mu)
+    dset["hv"] = v_from_z(dset.hz, dset.mz, dset.mv)
 
     # Indices open boundaries
     # dset["iob_z"] = xr.DataArray(da.from_array(iob), dims=("iiob", "nob_z"))
@@ -481,18 +564,21 @@ def write_otis_bin_grid(gfile, hz, mz, lon, lat, dt=12):
 
 def otis_to_oceantide(dsg, dsh, dsu):
     """Convert otis datasets into oceantide format."""
-    otis = Otis(dsg, dsh, dsu)
+    otis = OtisFormatter(dsg, dsh, dsu)
     ds = otis()
     return ds
 
 
-class Otis:
-    """Otis object formatter.
+class OtisFormatter:
+    """Format Otis datasets into Oceantide.
 
     Args:
-        dsg (Dataset): Otis grid dataset.
-        dsh (Dataset): Otis elevation dataset.
-        dsu (Dataset): Otis transports dataset.
+        - dsg (Dataset): Otis grid dataset.
+        - dsh (Dataset): Otis elevation dataset.
+        - dsu (Dataset): Otis transports dataset.
+
+    Note:
+        - Input datasets must have SI units.
 
     """
 
@@ -509,54 +595,6 @@ class Otis:
         self.construct()
         return self.ds
 
-    def _merge_otis_datasets(self):
-        """Combine h, u and grid datasets into single dataset."""
-        dsg = self.dsg.transpose("ny", "nx", ...)
-        dsh = self.dsh.transpose("nc", "ny", "nx", ...)
-        dsu = self.dsu.transpose("nc", "ny", "nx", ...)
-
-        del self.dsg
-        del self.dsh
-        del self.dsu
-
-        mz = dsg.mz.rename({"nx": "lon_z", "ny": "lat_z"})
-        mu = dsg.mu.rename({"nx": "lon_u", "ny": "lat_u"})
-        mv = dsg.mv.rename({"nx": "lon_v", "ny": "lat_v"})
-
-        hu = dsg.hu.rename({"nx": "lon_u", "ny": "lat_u"}).where(mu)
-        hv = dsg.hv.rename({"nx": "lon_v", "ny": "lat_v"}).where(mv)
-
-        URe = dsu.URe.rename({"nc": "con", "nx": "lon_u", "ny": "lat_u"}).where(mu)
-        UIm = dsu.UIm.rename({"nc": "con", "nx": "lon_u", "ny": "lat_u"}).where(mu)
-        VRe = dsu.VRe.rename({"nc": "con", "nx": "lon_v", "ny": "lat_v"}).where(mv)
-        VIm = dsu.VIm.rename({"nc": "con", "nx": "lon_v", "ny": "lat_v"}).where(mv)
-
-        self.ds = xr.Dataset(
-            coords={
-                "con": dsh.con.rename({"nc": "con"}),
-                "lon_z": dsh.lon_z.isel(ny=0).rename({"nx": "lon_z"}),
-                "lat_z": dsh.lat_z.isel(nx=0).rename({"ny": "lat_z"}),
-                "lon_u": dsu.lon_u.isel(ny=0).rename({"nx": "lon_u"}),
-                "lat_u": dsu.lat_u.isel(nx=0).rename({"ny": "lat_u"}),
-                "lon_v": dsu.lon_v.isel(ny=0).rename({"nx": "lon_v"}),
-                "lat_v": dsu.lat_v.isel(nx=0).rename({"ny": "lat_v"}),
-            },
-        )
-
-        del dsu
-
-        self.ds["dep"] = dsg.hz.rename({"nx": "lon_z", "ny": "lat_z"}).where(mz)
-        self.ds["hRe"] = dsh.hRe.rename({"nc": "con", "nx": "lon_z", "ny": "lat_z"}).where(mz)
-        self.ds["hIm"] = dsh.hIm.rename({"nc": "con", "nx": "lon_z", "ny": "lat_z"}).where(mz)
-        self.ds["uRe"] = URe / hu
-        self.ds["uIm"] = UIm / hu
-        self.ds["vRe"] = VRe / hv
-        self.ds["vIm"] = VIm / hv
-        self.ds["con"] = self.ds.con.astype("S4")
-
-        del dsg
-        del dsh
-
     def _to_complex(self):
         """Merge real and imaginary components into a complex variable."""
         for v in ["h", "u", "v"]:
@@ -565,21 +603,25 @@ class Otis:
 
     def _to_single_grid(self):
         """Convert Arakawa into single grid at Z-nodes."""
-        lat = self.ds.lat_z
-        lon = self.ds.lon_z
+        self.ds = xr.Dataset()
 
-        self.ds = self.ds.interp(
-            coords={"lon_u": lon, "lon_v": lon, "lat_u": lat, "lat_v": lat},
-            kwargs={"fill_value": "extrapolate"},
-        ).reset_coords()
+        # Variables at cell centre
+        self.ds["dep"] = self.dsg.hz
+        self.ds["hRe"] = self.dsh.hRe
+        self.ds["hIm"] = self.dsh.hIm
+        self.ds["uRe"] = z_from_u(self.dsu.URe / self.dsg.hu, self.dsg.mu, self.dsg.mz)
+        self.ds["uIm"] = z_from_u(self.dsu.UIm / self.dsg.hu, self.dsg.mu, self.dsg.mz)
+        self.ds["vRe"] = z_from_v(self.dsu.VRe / self.dsg.hv, self.dsg.mv, self.dsg.mz)
+        self.ds["vIm"] = z_from_v(self.dsu.VIm / self.dsg.hv, self.dsg.mv, self.dsg.mz)
 
-        mz = self.ds.hRe.isel(con=0).notnull()
-        mu = self.ds.uRe.isel(con=0).notnull()
-        mv = self.ds.vRe.isel(con=0).notnull()
-        self.ds = self.ds.where(mz).where(mu).where(mv)
+        # Coordinates
+        self.ds = self.ds.rename({"nc": "con", "nx": "lon", "ny": "lat"})
+        self.ds["con"] = self.dsh.con.rename({"nc": "con"})
+        self.ds["lon"] = self.dsh.lon_z.isel(ny=0).rename({"nx": "lon"})
+        self.ds["lat"] = self.dsh.lat_z.isel(nx=0).rename({"ny": "lat"})
 
-        self.ds = self.ds.rename({"lat_z": "lat", "lon_z": "lon"})
-        self.ds = self.ds.drop_vars(["lat_u", "lat_v", "lon_u", "lon_v"])
+        # Transpose
+        self.ds = self.ds.transpose("con", "lat", "lon")
 
     def _format_cons(self):
         """Format constituents coordinates."""
@@ -608,7 +650,6 @@ class Otis:
 
     def construct(self):
         """Define constituents dataset."""
-        self._merge_otis_datasets()
         self._to_single_grid()
         self._format_cons()
         self._to_complex()
