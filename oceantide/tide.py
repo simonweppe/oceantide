@@ -150,8 +150,8 @@ class Tide(metaclass=Plugin):
             Dataset predicted tide timeseries components.
 
         """
-        if not components:
-            raise ValueError("Choose at least one tide variable to predict")
+        if not components or {"h", "u", "v"} - set(components) == {"h", "u", "v"}:
+            raise ValueError("Choose at least one tide component h, u or v to predict")
 
         if isinstance(times, datetime.datetime):
             times = [times]
