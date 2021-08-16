@@ -1,7 +1,0 @@
-{
-    "_ARRAY_DIMENSIONS": [
-        "lon_u"
-    ],
-    "long_name": "longitude of U nodes",
-    "units": "degree_east"
-}

@@ -1,9 +1,0 @@
-{
-    "_ARRAY_DIMENSIONS": [
-        "con",
-        "lat_u",
-        "lon_u"
-    ],
-    "long_name": "Tidal WE velocities complex ampl., Real part, at U-nodes",
-    "units": "meter/s"
-}
