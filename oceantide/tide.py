@@ -24,7 +24,10 @@ class Plugin(type):
     """Add output functions as bound methods at class creation."""
 
     def __new__(cls, name, bases, dct):
-        module_names = [f.replace(".py", "") for f in glob.glob1(os.path.join(HERE, "output"), "*.py")]
+        module_names = [
+            f.replace(".py", "")
+            for f in glob.glob1(os.path.join(HERE, "output"), "*.py")
+        ]
         modules = [import_module(f"oceantide.output.{name}") for name in module_names]
         for module_name, module in zip(module_names, modules):
             for func_name, func in getmembers(module, isfunction):

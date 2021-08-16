@@ -2,7 +2,13 @@
 import os
 import xarray as xr
 
-from oceantide.core.otis import read_otis_bin_grid, read_otis_bin_h, read_otis_bin_u, otis_to_oceantide, otis_filenames
+from oceantide.core.otis import (
+    read_otis_bin_grid,
+    read_otis_bin_h,
+    read_otis_bin_u,
+    otis_to_oceantide,
+    otis_filenames,
+)
 from oceantide.tide import Tide
 
 
@@ -52,7 +58,6 @@ def read_otis_binary(filename=None, gfile=None, hfile=None, ufile=None):
 
 
 if __name__ == "__main__":
-
 
     hfile = "/data/tide/tpxo9v4a/bin/DATA/h_tpxo9.v4a"
     ufile = "/data/tide/tpxo9v4a/bin/DATA/u_tpxo9.v4a"

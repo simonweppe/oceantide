@@ -201,8 +201,8 @@ def arakawa_grid(nx, ny, x0, x1, y0, y1, variable):
     """
     dx = (x1 - x0) / nx
     dy = (y1 - y0) / ny
-    xcorner = np.clip(np.arange(x0, x1, dx), x0, x1)[0 : nx]
-    ycorner = np.clip(np.arange(y0, y1, dy), y0, y1)[0 : ny]
+    xcorner = np.clip(np.arange(x0, x1, dx), x0, x1)[0:nx]
+    ycorner = np.clip(np.arange(y0, y1, dy), y0, y1)[0:ny]
     if variable == "h":
         lon = xcorner + dx / 2
         lat = ycorner + dy / 2

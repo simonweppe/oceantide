@@ -2,7 +2,13 @@
 from pathlib import Path
 import numpy as np
 
-from oceantide.core.otis import write_otis_bin_h, write_otis_bin_u, write_otis_bin_grid, u_from_z, v_from_z
+from oceantide.core.otis import (
+    write_otis_bin_h,
+    write_otis_bin_u,
+    write_otis_bin_grid,
+    u_from_z,
+    v_from_z,
+)
 
 
 def to_otis_binary(self, dirname, hfile=True, ufile=False, gfile=False, suffix=None):
@@ -64,7 +70,7 @@ def to_otis_binary(self, dirname, hfile=True, ufile=False, gfile=False, suffix=N
             mz=mz,
             lon=ds.nx,
             lat=ds.ny,
-            dt=12.,
+            dt=12.0,
         )
 
     return filenames

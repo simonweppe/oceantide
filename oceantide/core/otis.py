@@ -59,7 +59,7 @@ def indices_open_boundary(mz):
     nx, ny = mz.shape
 
     # Define indices coordinates
-    mz = mz.assign_coords({"nx": range(1, nx + 1), "ny": range(1, ny + 1)}).fillna(1.)
+    mz = mz.assign_coords({"nx": range(1, nx + 1), "ny": range(1, ny + 1)}).fillna(1.0)
 
     # Slice four boundaries, sort so they are continuous, stack along new coord
     dsl = mz.isel(ny=[0]).stack({"n": ["nx", "ny"]})
@@ -95,8 +95,8 @@ def u_from_z(dz, mz=None, mu=None):
         mz = xr.where(dz.isnull(), 0.0, 1.0)
     if mu is None:
         mu = mz * mz.roll(nx=1, roll_coords=False)
-    iku = (mz.fillna(1.) + mz.fillna(1.).roll(nx=1, roll_coords=False)) == 1
-    du = mu.fillna(1.) * (dz + dz.roll(nx=1, roll_coords=False)) / 2
+    iku = (mz.fillna(1.0) + mz.fillna(1.0).roll(nx=1, roll_coords=False)) == 1
+    du = mu.fillna(1.0) * (dz + dz.roll(nx=1, roll_coords=False)) / 2
     du = xr.where(iku, dz, du)
     return du
 
@@ -122,8 +122,8 @@ def v_from_z(dz, mz=None, mv=None):
         mz = xr.where(dz.isnull(), 0.0, 1.0)
     if mv is None:
         mv = mz * mz.roll(ny=1, roll_coords=False)
-    ikv = (mz.fillna(1.) + mz.fillna(1.).roll(ny=1, roll_coords=False)) == 1
-    dv = mv.fillna(1.) * (dz + dz.roll(ny=1, roll_coords=False)) / 2
+    ikv = (mz.fillna(1.0) + mz.fillna(1.0).roll(ny=1, roll_coords=False)) == 1
+    dv = mv.fillna(1.0) * (dz + dz.roll(ny=1, roll_coords=False)) / 2
     dv = xr.where(ikv, dz, dv)
     return dv
 
@@ -144,8 +144,8 @@ def z_from_u(du, mu=None, mz=None):
         mu = xr.where(du.isnull(), 0.0, 1.0)
     if mz is None:
         mz = mu * mu.roll(nx=-1, roll_coords=False)
-    ikz = (mu.fillna(1.) + mu.fillna(1.).roll(nx=-1, roll_coords=False)) == 1
-    dz = mz.fillna(1.) * (du + du.roll(nx=-1, roll_coords=False)) / 2
+    ikz = (mu.fillna(1.0) + mu.fillna(1.0).roll(nx=-1, roll_coords=False)) == 1
+    dz = mz.fillna(1.0) * (du + du.roll(nx=-1, roll_coords=False)) / 2
     dz = xr.where(ikz, du, dz)
     return dz
 
@@ -166,8 +166,8 @@ def z_from_v(dv, mv=None, mz=None):
         mv = xr.where(dv.isnull(), 0.0, 1.0)
     if mz is None:
         mz = mv * mv.roll(ny=-1, roll_coords=False)
-    ikz = (mv.fillna(1.) + mv.fillna(1.).roll(ny=-1, roll_coords=False)) == 1
-    dz = mz.fillna(1.) * (dv + dv.roll(ny=-1, roll_coords=False)) / 2
+    ikz = (mv.fillna(1.0) + mv.fillna(1.0).roll(ny=-1, roll_coords=False)) == 1
+    dz = mz.fillna(1.0) * (dv + dv.roll(ny=-1, roll_coords=False)) / 2
     dz = xr.where(ikz, dv, dz)
     return dz
 
@@ -266,7 +266,7 @@ def read_otis_bin_u(ufile):
     set_attributes(dset, "otis")
     dset.attrs = {
         "type": "OTIS tidal transport file",
-        "title": "Oceantide tidal transport from binary file"
+        "title": "Oceantide tidal transport from binary file",
     }
 
     return dset
@@ -323,7 +323,7 @@ def read_otis_bin_h(hfile):
     set_attributes(dset, "otis")
     dset.attrs = {
         "type": "OTIS tidal elevation file",
-        "title": "Oceantide tidal elevation from binary file"
+        "title": "Oceantide tidal elevation from binary file",
     }
 
     return dset
@@ -363,7 +363,7 @@ def read_otis_bin_grid(gfile):
         f.seek(4, 0)
         nx, ny = np.fromfile(f, dtype=INT, count=2)
         y0, y1, x0, x1 = np.fromfile(f, dtype=FLOAT, count=4)
-        dt = np.fromfile(f, dtype=FLOAT, count=1) # lat-lon if > 0
+        dt = np.fromfile(f, dtype=FLOAT, count=1)  # lat-lon if > 0
         nob = np.fromfile(f, dtype=INT, count=1)
         if nob == 0:
             f.seek(20, 1)
@@ -418,7 +418,7 @@ def read_otis_bin_grid(gfile):
     set_attributes(dset, "otis")
     dset.attrs = {
         "type": "OTIS Arakawa C-grid file",
-        "title": "Oceantide bathymetry from binary file"
+        "title": "Oceantide bathymetry from binary file",
     }
 
     return dset
@@ -560,12 +560,12 @@ def write_otis_bin_grid(gfile, hz, mz, lon, lat, dt=12):
         # Water depth
         delim = np.array(4 * nx * ny, dtype=INT)
         delim.tofile(fid)
-        hz.fillna(0.).values.T.astype(FLOAT).tofile(fid)
+        hz.fillna(0.0).values.T.astype(FLOAT).tofile(fid)
         delim.tofile(fid)
 
         # Land mask
         delim.tofile(fid)
-        mz.fillna(1.).values.T.astype(INT).tofile(fid)
+        mz.fillna(1.0).values.T.astype(INT).tofile(fid)
         delim.tofile(fid)
 
 

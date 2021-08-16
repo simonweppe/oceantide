@@ -77,7 +77,7 @@ def to_otis_netcdf(self, dirname, hfile=True, ufile=True, gfile=True, suffix=Non
         vp = self.phase("v").transpose("con", "lon", "lat")
         vp = vp.rename({"con": "nc", "lon": "nx", "lat": "ny"}).drop(["nc", "nx", "ny"])
         dsout = xr.Dataset()
-        dsout["con"] =  dsout["con"] = xr.DataArray(cons, dims=("nc"))
+        dsout["con"] = dsout["con"] = xr.DataArray(cons, dims=("nc"))
         dsout["lon_u"] = xr.DataArray(lon_u, dims=("nx", "ny"))
         dsout["lat_u"] = xr.DataArray(lat_u, dims=("nx", "ny"))
         dsout["lon_v"] = xr.DataArray(lon_v, dims=("nx", "ny"))
@@ -86,13 +86,24 @@ def to_otis_netcdf(self, dirname, hfile=True, ufile=True, gfile=True, suffix=Non
         dsout["up"] = u_from_z(xr.DataArray(up, dims=("nc", "nx", "ny")), mz, mu)
         dsout["va"] = v_from_z(xr.DataArray(va, dims=("nc", "nx", "ny")), mz, mv)
         dsout["vp"] = v_from_z(xr.DataArray(vp, dims=("nc", "nx", "ny")), mz, mv)
-        dsout["URe"] = u_from_z(xr.DataArray(ds.u.real * ds.dep, dims=("nc", "nx", "ny")), mz, mu)
-        dsout["UIm"] = u_from_z(xr.DataArray(ds.u.imag * ds.dep, dims=("nc", "nx", "ny")), mz, mu)
-        dsout["VRe"] = v_from_z(xr.DataArray(ds.v.real * ds.dep, dims=("nc", "nx", "ny")), mz, mv)
-        dsout["VIm"] = v_from_z(xr.DataArray(ds.v.imag * ds.dep, dims=("nc", "nx", "ny")), mz, mv)
+        dsout["URe"] = u_from_z(
+            xr.DataArray(ds.u.real * ds.dep, dims=("nc", "nx", "ny")), mz, mu
+        )
+        dsout["UIm"] = u_from_z(
+            xr.DataArray(ds.u.imag * ds.dep, dims=("nc", "nx", "ny")), mz, mu
+        )
+        dsout["VRe"] = v_from_z(
+            xr.DataArray(ds.v.real * ds.dep, dims=("nc", "nx", "ny")), mz, mv
+        )
+        dsout["VIm"] = v_from_z(
+            xr.DataArray(ds.v.imag * ds.dep, dims=("nc", "nx", "ny")), mz, mv
+        )
 
         set_attributes(dsout, "otis")
-        dsout.attrs = {"title": "OTIS tidal transport/current file", "source": "Oceantide"}
+        dsout.attrs = {
+            "title": "OTIS tidal transport/current file",
+            "source": "Oceantide",
+        }
 
         dsout.to_netcdf(filenames["ufile"])
 
@@ -113,9 +124,15 @@ def to_otis_netcdf(self, dirname, hfile=True, ufile=True, gfile=True, suffix=Non
         dsout["hz"] = xr.DataArray(ds.dep, dims=("nx", "ny"))
         dsout["hu"] = u_from_z(xr.DataArray(ds.dep, dims=("nx", "ny")), mz, mu)
         dsout["hv"] = v_from_z(xr.DataArray(ds.dep, dims=("nx", "ny")), mz, mv)
-        dsout["iob_z"] = xr.DataArray(indices_open_boundary(dsout.mz), dims=("iiob", "nob_z"))
-        dsout["iob_u"] = xr.DataArray(indices_open_boundary(dsout.mu), dims=("iiob", "nob_u"))
-        dsout["iob_v"] = xr.DataArray(indices_open_boundary(dsout.mv), dims=("iiob", "nob_v"))
+        dsout["iob_z"] = xr.DataArray(
+            indices_open_boundary(dsout.mz), dims=("iiob", "nob_z")
+        )
+        dsout["iob_u"] = xr.DataArray(
+            indices_open_boundary(dsout.mu), dims=("iiob", "nob_u")
+        )
+        dsout["iob_v"] = xr.DataArray(
+            indices_open_boundary(dsout.mv), dims=("iiob", "nob_v")
+        )
 
         set_attributes(dsout, "otis")
         dsout.attrs = {"title": "OTIS Arakawa C-grid file", "source": "Oceantide"}

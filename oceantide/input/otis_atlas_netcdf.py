@@ -28,11 +28,13 @@ CONS = [
     "MN4",
     "MS4",
     "2N2",
-    "S1"
+    "S1",
 ]
 
 
-def read_otis_atlas_netcdf(dirname, x0=None, x1=None, y0=None, y1=None, nxchunk=500, nychunk=500):
+def read_otis_atlas_netcdf(
+    dirname, x0=None, x1=None, y0=None, y1=None, nxchunk=500, nychunk=500
+):
     """Read Otis Netcdf file format.
 
     Args:
@@ -65,8 +67,12 @@ def read_otis_atlas_netcdf(dirname, x0=None, x1=None, y0=None, y1=None, nxchunk=
 
     bounds = {"x0": x0, "x1": x1, "y0": y0, "y1": y1}
     dsg = read_grid(gfile, chunks={"nx": nxchunk, "ny": nychunk}, **bounds)
-    dsh = read_elevations(hfile, chunks={"nc": None, "nx": nxchunk, "ny": nychunk}, **bounds)
-    dsu = read_transports(ufile, chunks={"nc": None, "nx": nxchunk, "ny": nychunk}, **bounds)
+    dsh = read_elevations(
+        hfile, chunks={"nc": None, "nx": nxchunk, "ny": nychunk}, **bounds
+    )
+    dsu = read_transports(
+        ufile, chunks={"nc": None, "nx": nxchunk, "ny": nychunk}, **bounds
+    )
 
     # Make coordinates 2d so they are consistent with non-atlas datasets
     dsh["lon_z"] = dsg.lon_z
@@ -178,4 +184,3 @@ def read_transports(filenames, chunks, x0, x1, y0, y1):
     dset["vRe"] = dset.vRe * 1e-2
     dset["vIm"] = dset.vIm * 1e-2
     return dset.rename({"uRe": "URe", "uIm": "UIm", "vRe": "VRe", "vIm": "VIm"})
-

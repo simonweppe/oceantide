@@ -5,7 +5,9 @@ import xarray as xr
 from oceantide.tide import Tide
 
 
-def read_oceantide(filename=None, engine="zarr", backend_kwargs={"consolidated": True}, **kwargs):
+def read_oceantide(
+    filename=None, engine="zarr", backend_kwargs={"consolidated": True}, **kwargs
+):
     """Read Oceantide file format.
 
     Args:
