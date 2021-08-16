@@ -476,7 +476,7 @@ def write_otis_bin_h(hfile, hRe, hIm, con, lon, lat):
         - hfile (str): Name of elevation binary constituents file to write.
         - hRe (DataArray, 3darray): Real elevation :math:`\\Re{h}(nc,nx,ny)`.
         - hIm (DataArray, 3darray): Imag elevation :math:`\\Im{h}(nc,nx,ny)`.
-        - con (1darray): Constituents names (lowercase).
+        - con (1darray): Constituents names in numpy bytes format.
         - lon (DataArray, 1darray): Longitude coordinates at the cell centre (Z-nodes).
         - lat (DataArray, 1darray): Latitude coordinates at the cell centre (Z-nodes).
 
@@ -487,6 +487,14 @@ def write_otis_bin_h(hfile, hRe, hIm, con, lon, lat):
     """
     nc, nx, ny = hRe.shape
 
+    # Cons array in bytes format
+    if isinstance(con, xr.DataArray):
+        con = con.values
+    if isinstance(con[0], np.str_):
+        con = [f"{c.lower():4s}" for c in con]
+    elif isinstance(con[0], np.bytes_):
+        con = [f"{c.decode('utf-8').lower():4s}" for c in con]
+
     with open(hfile, "wb") as fid:
 
         # Header
@@ -496,7 +504,7 @@ def write_otis_bin_h(hfile, hRe, hIm, con, lon, lat):
         np.array(ny, dtype=INT).tofile(fid)
         np.array(nc, dtype=INT).tofile(fid)
         theta_lim(lon, lat).tofile(fid)
-        np.array([f"{c:4s}" for c in con.values], dtype="S4").tofile(fid)
+        np.array(con, dtype="S4").tofile(fid)
         delim.tofile(fid)
 
         # Records
