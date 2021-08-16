@@ -1,25 +1,28 @@
 """Test Otis functions."""
 import filecmp
+from pathlib import Path
 
 from oceantide import read_otis_netcdf
 from oceantide.core.otis import read_otis_bin_h, read_otis_bin_u, read_otis_bin_grid, write_otis_bin_h, write_otis_bin_u, write_otis_bin_grid
 
 
+FILES_DIR = Path(__file__).parent / "test_files"
+
+
 def test_read_otis_netcdf():
-
-    hfile = "/data/tide/tpxo9v4a/netcdf/DATA/h_tpxo9.v4a.nc"
-    ufile = "/data/tide/tpxo9v4a/netcdf/DATA/u_tpxo9.v4a.nc"
-    gfile = "/data/tide/tpxo9v4a/netcdf/DATA/grid_tpxo9.v4a.nc"
-
+    hfile = FILES_DIR / "otis_netcdf/hf.test.nc"
+    ufile = FILES_DIR / "otis_netcdf/uv.test.nc"
+    gfile = FILES_DIR / "otis_netcdf/grid.test.nc"
     dset = read_otis_netcdf(gfile=gfile, hfile=hfile, ufile=ufile)
+    assert hasattr(dset, "tide")
 
 
 def test_binary_otis_io(tmpdir):
     """Read existing binaries, write new binaries, compare existing and new files."""
 
-    hfile0 = "tests/test_files/otis_binary/h_rag"
-    ufile0 = "tests/test_files/otis_binary/u_rag"
-    gfile0 = "tests/test_files/otis_binary/grid_rag"
+    hfile0 = FILES_DIR / "otis_binary/h_rag"
+    ufile0 = FILES_DIR / "otis_binary/u_rag"
+    gfile0 = FILES_DIR / "otis_binary/grid_rag"
 
     hfile1 = tmpdir / "h"
     ufile1 = tmpdir / "u"
@@ -44,7 +47,6 @@ def test_binary_otis_io(tmpdir):
 
 def test_otis_binary_writer_plugin(tmpdir):
     "Test output otis binary plugin."
-    dset = read_otis_netcdf("/data/tide/tpxo9v4a/netcdf/DATA/Model_tpxo9v4a")
-    dset = dset.isel(lon=slice(None, None, 10), lat=slice(None, None, 10)).load()
+    dset = read_otis_netcdf(FILES_DIR / "otis_netcdf/Model_test")
     filenames = dset.tide.to_otis_binary(tmpdir, hfile=True, ufile=True, gfile=True)
     print(filenames)

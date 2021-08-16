@@ -476,7 +476,7 @@ def write_otis_bin_h(hfile, hRe, hIm, con, lon, lat):
         - hfile (str): Name of elevation binary constituents file to write.
         - hRe (DataArray, 3darray): Real elevation :math:`\\Re{h}(nc,nx,ny)`.
         - hIm (DataArray, 3darray): Imag elevation :math:`\\Im{h}(nc,nx,ny)`.
-        - con (1darray): Constituents names in numpy bytes format.
+        - con (DataArray, 1darray): Constituents names.
         - lon (DataArray, 1darray): Longitude coordinates at the cell centre (Z-nodes).
         - lat (DataArray, 1darray): Latitude coordinates at the cell centre (Z-nodes).
 
