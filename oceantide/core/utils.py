@@ -226,9 +226,8 @@ def set_attributes(dset, dataset_type):
 
     """
     all_attrs = yaml.load(open(HERE / "attributes.yml"), Loader=yaml.Loader)
-    for varname, darr in dset.variables.items():
-        darr.attrs.update(all_attrs.get(dataset_type).get(varname, {}))
-
-
-# if __name__ == "__main__":
-#     set_attributes("otis", "hRe")
+    if isinstance(dset, xr.Dataset):
+        for varname, darr in dset.variables.items():
+            darr.attrs.update(all_attrs.get(dataset_type).get(varname, {}))
+    elif isinstance(dset, xr.DataArray):
+        dset.attrs.update(all_attrs.get(dataset_type).get(dset.name, {}))

@@ -120,6 +120,30 @@ oceantide:
     standard_name: latitude
     long_name: Latitude
     units: degree_north
+  amph:
+    standard_name: sea_surface_height_amplitude_due_to_geocentric_ocean_tide
+    long_name: Tidal elevation amplitude
+    units: m
+  ampu:
+    standard_name: eastward_sea_water_velocity_amplitude_due_to_tides
+    long_name: Tidal eastward velocity amplitude
+    units: m s-1
+  ampv:
+    standard_name: northward_sea_water_velocity_amplitude_due_to_tides
+    long_name: Tidal northward velocity amplitude
+    units: m s-1
+  phih:
+    standard_name: sea_surface_height_phase_due_to_geocentric_ocean_tide
+    long_name: Tidal elevation phase,
+    units: degree GMT
+  phiu:
+    standard_name: eastward_sea_water_velocity_phase_due_to_tides
+    long_name: Tidal eastward velocity phase
+    units: degree GMT
+  phiv:
+    standard_name: northward_sea_water_velocity_phase_due_to_tides
+    long_name: Tidal northward velocity phase
+    units: degree GMT
 
 timeseries:
   h:

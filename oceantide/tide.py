@@ -87,26 +87,12 @@ class Tide(metaclass=Plugin):
             - component (str): Tidal component to calculate amplitude from,
               one of 'h', 'u', 'v'.
 
+        Returns:
+            - amp (DataArray): Amplitudes for component :math:`\\lambda(con,lat,lon)`.
+
         """
         darr = np.absolute(self._obj[component])
-        if component == "h":
-            darr.attrs = {
-                "standard_name": "sea_surface_height_amplitude_due_to_geocentric_ocean_tide",
-                "long_name": "Tidal elevation amplitude",
-                "units": "m",
-            }
-        elif component == "u":
-            darr.attrs = {
-                "standard_name": "eastward_sea_water_velocity_amplitude_due_to_tides",
-                "long_name": "Tidal eastward velocity amplitude",
-                "units": "m s-1",
-            }
-        elif component == "v":
-            darr.attrs = {
-                "standard_name": "northward_sea_water_velocity_amplitude_due_to_tides",
-                "long_name": "Tidal northward velocity amplitude",
-                "units": "m s-1",
-            }
+        darr.name = f"amp{component}"
         return darr
 
     def phase(self, component="h"):
@@ -116,26 +102,13 @@ class Tide(metaclass=Plugin):
             - component (str): Tidal component to calculate amplitude from,
               one of 'h', 'u', 'v'.
 
+        Returns:
+            - phi (DataArray): Phases for component :math:`\\phi(con,lat,lon)`.
+
         """
         darr = 360 - (xr.ufuncs.angle(self._obj[component], deg=True)) % 360
-        if component == "h":
-            darr.attrs = {
-                "standard_name": "sea_surface_height_phase_due_to_geocentric_ocean_tide",
-                "long_name": "Tidal elevation phase",
-                "units": "degree GMT",
-            }
-        elif component == "u":
-            darr.attrs = {
-                "standard_name": "eastward_sea_water_velocity_phase_due_to_tides",
-                "long_name": "Tidal eastward velocity phase",
-                "units": "degree GMT",
-            }
-        elif component == "v":
-            darr.attrs = {
-                "standard_name": "northward_sea_water_velocity_phase_due_to_tides",
-                "long_name": "Tidal northward velocity phase",
-                "units": "degree GMT",
-            }
+        darr.name = f"phi{component}"
+        set_attributes(darr, "oceantide")
         return darr
 
     def predict(self, times, time_chunk=50, components=["h", "u", "v"]):
@@ -147,7 +120,7 @@ class Tide(metaclass=Plugin):
             components (list): Tide variables to predict.
 
         Returns:
-            Dataset predicted tide timeseries components.
+            ds (Dataset): Predicted tide timeseries components :math:`\\eta(time,lat,lon)`.
 
         """
         if not components or {"h", "u", "v"} - set(components) == {"h", "u", "v"}:
