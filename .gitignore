@@ -64,6 +64,11 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/auto_gallery
+docs/savefig
+docs/oceantide.*.rst
+docs/oceantide.rst
+docs/modules.rst
 
 # PyBuilder
 target/
