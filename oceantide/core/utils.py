@@ -3,7 +3,6 @@ from pathlib import Path
 import yaml
 import numpy as np
 import xarray as xr
-from fsspec import get_mapper
 
 from oceantide.constituents import V0U
 
@@ -15,10 +14,14 @@ def nodal(time, con):
     """Nodal correction.
 
     Args:
-        time (datetime): Nodal time, the number of days since 1 Jan 1992 plus 48622.
-        con (list): List of constituents to consider, e.g., ["M2", "S2" "K1", O1].
+        - time (1darray): Time given as the number of days since 01 Jan 1992 + 48622,
+          or equivalently the number of days since 17 Nov 1858.
+        - con (1darray): Constituents to compute.
 
-    Derived from the tide model driver matlab scipt: nodal.m.
+    Returns:
+        - pu (1darray): Nodal correction pu.
+        - pf (1darray): Nodal correction pf.
+        - v0u (1darray): Nodal correction v0u.
 
     """
     rad = np.pi / 180.0
@@ -89,7 +92,6 @@ def nodal(time, con):
         },
     }
 
-    # Prepare the output data
     ncon = len(con)
     pu = np.zeros(ncon)
     pf = np.ones(ncon)
@@ -106,80 +108,25 @@ def nodal(time, con):
 
 
 def astrol(time):
-    """Computes the basic astronomical mean longitudes  s, h, p, N.
-
-    Note N is not N', i.e. N is decreasing with time. These formulae are for the period
-        1990 - 2010, and were derived by David Cartwright (personal comm., Nov. 1990).
-        Time is UTC in decimal MJD. All longitudes returned in degrees.
-        R. D. Ray    Dec. 1990
-        Non-vectorized version. Re-make for matlab by Lana Erofeeva, 2003
-
-    usage: s, h, p, N = astrol(time)
-
-    time, MJD
-    circle = 360;
-    T = time - 51544.4993
-    mean longitude of moon
-    ----------------------
-    s = 218.3164 + 13.17639648 * T
-    mean longitude of sun
-    ---------------------
-    h = 280.4661 +  0.98564736 * T
-    mean longitude of lunar perigee
-    -------------------------------
-    p =  83.3535 +  0.11140353 * T
-    mean longitude of ascending lunar node
-    --------------------------------------
-    N = 125.0445D0 -  0.05295377D0 * T
-    s = mod(s, circle)
-    h = mod(h, circle)
-    p = mod(p, circle)
-    N = mod(N, circle)
-
-    """
-    circle = 360
-    T = time - 51544.4993
-    # mean longitude of moon
-    # ----------------------
-    s = 218.3164 + 13.17639648 * T
-    # mean longitude of sun
-    # ---------------------
-    h = 280.4661 + 0.98564736 * T
-    # mean longitude of lunar perigee
-    # -------------------------------
-    p = 83.3535 + 0.11140353 * T
-    # mean longitude of ascending lunar node
-    # --------------------------------------
-    N = 125.0445 - 0.05295377 * T
-    #
-    s = np.mod(s, circle)
-    h = np.mod(h, circle)
-    p = np.mod(p, circle)
-    N = np.mod(N, circle)
-
-    return s, h, p, N
-
-
-def read_netcdf_or_zarr(filename_or_fileglob, file_format):
-    """Read constituents dataset in either netcdf or zarr format.
+    """Mean astronomical longitudes  s, h, p, N.
 
     Args:
-        filename_or_fileglob (str): filename or fileglob specifying multiple
-            files to read.
-            file_format (str): format of file to open, one of `netcdf` or `zarr`.
+        - time (1darray): Time given as the number of days since 01 Jan 1992 + 48622,
+          or equivalently the number of days since 17 Nov 1858.
 
     Returns:
-        dset (Dataset): spectra dataset object read from file.
+        - s (1darray): The mean longitude of moon.
+        - h (1darray): The mean longitude of sun.
+        - p (1darray): The mean longitude of lunar perigee.
+        - N (1darray): The mean longitude of ascending lunar node.
 
     """
-    if file_format == "netcdf":
-        dset = xr.open_mfdataset(filename_or_fileglob, combine="by_coords")
-    elif file_format == "zarr":
-        fsmap = get_mapper(filename_or_fileglob)
-        dset = xr.open_zarr(fsmap, consolidated=True)
-    else:
-        raise ValueError("file_format must be one of ('netcdf', 'zarr')")
-    return dset
+    T = time - 51544.4993
+    s = (218.3164 + 13.17639648 * T) % 360
+    h = (280.4661 + 0.98564736 * T) % 360
+    p = (83.3535 + 0.11140353 * T) % 360
+    N = (125.0445 - 0.05295377 * T) % 360
+    return s, h, p, N
 
 
 def arakawa_grid(nx, ny, x0, x1, y0, y1, variable):
