@@ -429,10 +429,10 @@ def write_otis_bin_u(ufile, URe, UIm, VRe, VIm, con, lon, lat):
 
     Args:
         - ufile (str): Name of transports binary constituents file to write.
-        - URe (DataArray, 3darray): Real eastward transport :math:`\\Re{U}(nc,nx,ny)`.
-        - UIm (DataArray, 3darray): Imag eastward transport :math:`\\Im{U}(nc,nx,ny)`.
-        - VRe (DataArray, 3darray): Real northward transport :math:`\\Re{V}(nc,nx,ny)`.
-        - VIm (DataArray, 3darray): Imag northward transport :math:`\\Im{V}(nc,nx,ny)`.
+        - URe (DataArray): Real eastward transport :math:`\\Re{U}(nc,nx,ny)`.
+        - UIm (DataArray): Imag eastward transport :math:`\\Im{U}(nc,nx,ny)`.
+        - VRe (DataArray): Real northward transport :math:`\\Re{V}(nc,nx,ny)`.
+        - VIm (DataArray): Imag northward transport :math:`\\Im{V}(nc,nx,ny)`.
         - con (1darray): Constituents names (lowercase).
         - lon (DataArray, 1darray): Longitude coordinates at the cell centre (Z-nodes).
         - lat (DataArray, 1darray): Latitude coordinates at the cell centre (Z-nodes).
@@ -440,9 +440,15 @@ def write_otis_bin_u(ufile, URe, UIm, VRe, VIm, con, lon, lat):
     Note:
         - Arrays must have shape consistent with Otis convention :math:`(nc,nx,ny)`.
         - Coordinates lon and lat can be 1d or 2d arrays.
+        - Masked values are filled with zeros before writing.
 
     """
     nc, nx, ny = URe.shape
+
+    URe = URe.fillna(0.0)
+    UIm = UIm.fillna(0.0)
+    VRe = VRe.fillna(0.0)
+    VIm = VIm.fillna(0.0)
 
     with open(ufile, "wb") as fid:
 
@@ -474,8 +480,8 @@ def write_otis_bin_h(hfile, hRe, hIm, con, lon, lat):
 
     Args:
         - hfile (str): Name of elevation binary constituents file to write.
-        - hRe (DataArray, 3darray): Real elevation :math:`\\Re{h}(nc,nx,ny)`.
-        - hIm (DataArray, 3darray): Imag elevation :math:`\\Im{h}(nc,nx,ny)`.
+        - hRe (DataArray): Real elevation :math:`\\Re{h}(nc,nx,ny)`.
+        - hIm (DataArray): Imag elevation :math:`\\Im{h}(nc,nx,ny)`.
         - con (DataArray, 1darray): Constituents names.
         - lon (DataArray, 1darray): Longitude coordinates at the cell centre (Z-nodes).
         - lat (DataArray, 1darray): Latitude coordinates at the cell centre (Z-nodes).
@@ -483,9 +489,13 @@ def write_otis_bin_h(hfile, hRe, hIm, con, lon, lat):
     Note:
         - Arrays must have shape consistent with Otis convention :math:`(nc,nx,ny)`.
         - Coordinates lon and lat can be 1d or 2d arrays.
+        - Masked values are filled with zeros before writing.
 
     """
     nc, nx, ny = hRe.shape
+
+    hRe = hRe.fillna(0.0)
+    hIm = hIm.fillna(0.0)
 
     # Cons array in bytes format
     if isinstance(con, xr.DataArray):
@@ -523,8 +533,8 @@ def write_otis_bin_grid(gfile, hz, mz, lon, lat, dt=12):
 
     Args:
         - gfile (str): Name of grid binary file to write.
-        - hz (DataArray, 2darray): Water depth at Z-nodes :math:`h(nx,ny)`.
-        - mz (DataArray, 2darray): Land mask at Z-nodes :math:`m(nx,ny)`.
+        - hz (DataArray): Water depth at Z-nodes :math:`h(nx,ny)`.
+        - mz (DataArray): Land mask at Z-nodes :math:`m(nx,ny)`.
         - lon (DataArray, 1darray): Longitude coordinates at the cell centre (Z-nodes).
         - lat (DataArray, 1darray): Latitude coordinates at the cell centre (Z-nodes).
 
@@ -641,6 +651,11 @@ class OtisFormatter:
         set_attributes(self.ds, "oceantide")
         self.ds.attrs = {"description": "Oceantide tidal constituents"}
 
+    def _mask_land(self):
+        """Mask grid points where depth <= 0."""
+        for v in ["h", "u", "v"]:
+            self.ds[v] = self.ds[v].where(self.ds.dep > 0)
+
     def validate(self):
         """Check that input dataset has all requirements."""
         for v in ["hRe", "hIm"]:
@@ -661,3 +676,4 @@ class OtisFormatter:
         self._format_cons()
         self._to_complex()
         self._set_attributes()
+        self._mask_land()
