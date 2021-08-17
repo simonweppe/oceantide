@@ -28,6 +28,7 @@ def to_otis_binary(self, dirname, hfile=True, ufile=False, gfile=False, suffix=N
     """
     ds = self._obj.transpose("con", "lon", "lat")
     ds = ds.rename({"con": "nc", "lon": "nx", "lat": "ny"})
+    ds = ds.fillna(0.0)
 
     suffix = suffix or "".join(list(ds.nc.values)).lower()
     filenames = {}

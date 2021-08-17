@@ -24,6 +24,8 @@ def to_otis_netcdf(self, dirname, hfile=True, ufile=True, gfile=True, suffix=Non
     """
     ds = self._obj.transpose("con", "lon", "lat")
     ds = ds.rename({"con": "nc", "lon": "nx", "lat": "ny"})
+    ds = ds.fillna(0.0)
+
     suffix = suffix or "".join(list(ds.nc.values)).lower()
     lat_z, lon_z = np.meshgrid(ds.ny, ds.nx)
     dx = float(ds.nx[1] - ds.nx[0])
