@@ -179,67 +179,8 @@ def read_transports(filenames, chunks, x0, x1, y0, y1):
     )
     ix0, ix1, iy0, iy1 = indices(dset.lon_v, dset.lat_u, x0, x1, y0, y1)
     dset = dset.isel(nx=slice(ix0, ix1), ny=slice(iy0, iy1)).chunk(chunks)
-    dset["uRe"] = dset.uRe * 1e-1
-    dset["uIm"] = dset.uIm * 1e-1
-    dset["vRe"] = dset.vRe * 1e-1
-    dset["vIm"] = dset.vIm * 1e-1
+    dset["uRe"] = dset.uRe * 1e-4
+    dset["uIm"] = dset.uIm * 1e-4
+    dset["vRe"] = dset.vRe * 1e-4
+    dset["vIm"] = dset.vIm * 1e-4
     return dset.rename({"uRe": "URe", "uIm": "UIm", "vRe": "VRe", "vIm": "VIm"})
-
-
-if __name__ == "__main__":
-    import itertools
-    import warnings
-    from pathlib import Path
-    import datetime
-    import pandas as pd
-    import xarray as xr
-    import matplotlib.pyplot as plt
-
-    # from oceantide import read_otis_atlas_netcdf, read_oceantide
-
-    warnings.filterwarnings("ignore", category=RuntimeWarning)
-
-
-    atlas_path = Path("/data/tide/tpxo9v4_atlas/TPXO9_atlas_nc")
-
-    dset = read_otis_atlas_netcdf(
-        dirname=atlas_path,
-        x0=356,
-        x1=358,
-        y0=55.5,
-        y1=57,
-        # nxchunk=500,
-        # nychunk=500,
-    ).load()
-
-    dset.tide.amplitude("u").isel(con=0).plot()
-    plt.show()
-
-    def chunked_iterable(iterable, size):
-        """Iterate through array over chunks with specific size."""
-        it = iter(iterable)
-        while True:
-            chunk = tuple(itertools.islice(it, size))
-            if not chunk:
-                break
-            yield chunk
-
-    # lons = xr.open_dataset(atlas_path / "grid_tpxo9_atlas_v4.nc").lon_z.values
-
-    # chunksizes = 100
-    # itersize = 200
-
-    # for ind in chunked_iterable(range(lons.size), size=itersize):
-    #     x0 = lons[ind[0]]
-    #     x1 = lons[ind[-1]]
-    #     print(f"Writing lon chunk {ind[0]}")
-    #     dset = read_otis_atlas_netcdf(atlas_path, x0=x0, x1=x1, nxchunk=itersize, nychunk=None)
-    #     dset = dset.chunk({"con": None, "lon": chunksizes, "lat": chunksizes})
-    #     if ind[0] == 0:
-    #         mode = "w"
-    #         append_dim = None
-    #     else:
-    #         mode = "a"
-    #         append_dim = "lon"
-    #     dset.to_zarr("./atlas.zarr", mode=mode, consolidated=True, append_dim=append_dim)
-
