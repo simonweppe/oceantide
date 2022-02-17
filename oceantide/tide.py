@@ -109,7 +109,7 @@ class Tide(metaclass=Plugin):
             - phi (DataArray): Phases for component :math:`\\phi(con,lat,lon)`.
 
         """
-        darr = 360 - (xr.ufuncs.angle(self._obj[component], deg=True)) % 360
+        darr = -xr.ufuncs.angle(self._obj[component], deg=True) % 360
         darr.name = f"phi{component}"
         set_attributes(darr, "oceantide")
         return darr
