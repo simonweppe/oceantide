@@ -99,7 +99,7 @@ class Tide(metaclass=Plugin):
         return darr
 
     def phase(self, component="h"):
-        """Tidal phase.
+        """Tidal phase relative to GMT.
 
         Args:
             - component (str): Tidal component to calculate amplitude from,
@@ -109,7 +109,8 @@ class Tide(metaclass=Plugin):
             - phi (DataArray): Phases for component :math:`\\phi(con,lat,lon)`.
 
         """
-        darr = -xr.ufuncs.angle(self._obj[component], deg=True) % 360
+        darr = self._obj[component]
+        darr = np.rad2deg(np.arctan2(-darr.imag, darr.real)) % 360
         darr.name = f"phi{component}"
         set_attributes(darr, "oceantide")
         return darr
