@@ -50,5 +50,20 @@ def test_otis_netcdf_correct_args():
         )
 
 
-def test_read_oceantide():
-    read_oceantide(FILES_DIR / "oceantide.zarr")
+def test_read_write_oceantide_netcdf(tmpdir):
+    dset = read_oceantide(FILES_DIR / "oceantide.nc")
+    dset.tide.to_oceantide(tmpdir / "newoceantide.nc")
+
+
+def test_read_write_oceantide_zarr(tmpdir):
+    dset = read_oceantide(FILES_DIR / "oceantide.zarr")
+    dset.tide.to_oceantide(str(tmpdir / "newoceantide.zarr"))
+
+
+def test_supported_oceantide_formats(tmpdir):
+    dset = read_oceantide(FILES_DIR / "oceantide.zarr")
+    with pytest.raises(ValueError):
+        dset.tide.to_oceantide(tmpdir / "newoceantide.zarr", file_format="txt")
+    with pytest.raises(ValueError):
+        dset.tide.to_oceantide(tmpdir / "newoceantide.txt")
+    dset.tide.to_oceantide(tmpdir / "newoceantide.txt", file_format="netcdf")
