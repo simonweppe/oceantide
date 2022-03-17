@@ -1,0 +1,10 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "con",
+        "lat",
+        "lon"
+    ],
+    "long_name": "Tidal eastward velocity amplitude real component",
+    "standard_name": "tidal_eastward_velocity_amplitude_real_component",
+    "units": "m s-1"
+}

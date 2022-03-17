@@ -1,0 +1,8 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "lat",
+        "lon"
+    ],
+    "standard_name": "sea_floor_depth_below_mean_sea_level",
+    "units": "m"
+}

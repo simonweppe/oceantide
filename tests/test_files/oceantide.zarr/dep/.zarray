@@ -1,0 +1,30 @@
+{
+    "chunks": [
+        19,
+        34
+    ],
+    "compressor": {
+        "blocksize": 0,
+        "clevel": 5,
+        "cname": "lz4",
+        "id": "blosc",
+        "shuffle": 1
+    },
+    "dtype": "<f4",
+    "fill_value": 12000.0,
+    "filters": [
+        {
+            "astype": "<i2",
+            "dtype": "<f4",
+            "id": "fixedscaleoffset",
+            "offset": 6000.09155413138,
+            "scale": 5.461250000000001
+        }
+    ],
+    "order": "C",
+    "shape": [
+        19,
+        34
+    ],
+    "zarr_format": 2
+}

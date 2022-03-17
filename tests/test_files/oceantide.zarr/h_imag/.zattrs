@@ -1,0 +1,10 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "con",
+        "lat",
+        "lon"
+    ],
+    "long_name": "Tidal elevation amplitude imag component",
+    "standard_name": "tidal_elevation_amplitude_imag_component",
+    "units": "m"
+}

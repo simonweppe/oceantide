@@ -33,7 +33,7 @@
             "standard_name": "tidal_constituent",
             "units": ""
         },
-        "depth/.zarray": {
+        "dep/.zarray": {
             "chunks": [
                 19,
                 34
@@ -46,8 +46,16 @@
                 "shuffle": 1
             },
             "dtype": "<f4",
-            "fill_value": "NaN",
-            "filters": null,
+            "fill_value": 12000.0,
+            "filters": [
+                {
+                    "astype": "<i2",
+                    "dtype": "<f4",
+                    "id": "fixedscaleoffset",
+                    "offset": 6000.09155413138,
+                    "scale": 5.461250000000001
+                }
+            ],
             "order": "C",
             "shape": [
                 19,
@@ -55,7 +63,7 @@
             ],
             "zarr_format": 2
         },
-        "depth/.zattrs": {
+        "dep/.zattrs": {
             "_ARRAY_DIMENSIONS": [
                 "lat",
                 "lon"
@@ -63,7 +71,7 @@
             "standard_name": "sea_floor_depth_below_mean_sea_level",
             "units": "m"
         },
-        "et/.zarray": {
+        "h_imag/.zarray": {
             "chunks": [
                 3,
                 19,
@@ -76,9 +84,17 @@
                 "id": "blosc",
                 "shuffle": 1
             },
-            "dtype": "<c8",
-            "fill_value": null,
-            "filters": null,
+            "dtype": "<f4",
+            "fill_value": 20.0,
+            "filters": [
+                {
+                    "astype": "<i2",
+                    "dtype": "<f4",
+                    "id": "fixedscaleoffset",
+                    "offset": 0.00030518043793392735,
+                    "scale": 1638.375
+                }
+            ],
             "order": "C",
             "shape": [
                 3,
@@ -87,13 +103,56 @@
             ],
             "zarr_format": 2
         },
-        "et/.zattrs": {
+        "h_imag/.zattrs": {
             "_ARRAY_DIMENSIONS": [
                 "con",
                 "lat",
                 "lon"
             ],
-            "standard_name": "tidal_elevation_complex_amplitude",
+            "long_name": "Tidal elevation amplitude imag component",
+            "standard_name": "tidal_elevation_amplitude_imag_component",
+            "units": "m"
+        },
+        "h_real/.zarray": {
+            "chunks": [
+                3,
+                19,
+                34
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": 20.0,
+            "filters": [
+                {
+                    "astype": "<i2",
+                    "dtype": "<f4",
+                    "id": "fixedscaleoffset",
+                    "offset": 0.00030518043793392735,
+                    "scale": 1638.375
+                }
+            ],
+            "order": "C",
+            "shape": [
+                3,
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "h_real/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "con",
+                "lat",
+                "lon"
+            ],
+            "long_name": "Tidal elevation amplitude real component",
+            "standard_name": "tidal_elevation_amplitude_real_component",
             "units": "m"
         },
         "lat/.zarray": {
@@ -150,7 +209,7 @@
             "standard_name": "longitude",
             "units": "degrees_east"
         },
-        "ut/.zarray": {
+        "u_imag/.zarray": {
             "chunks": [
                 3,
                 19,
@@ -163,9 +222,17 @@
                 "id": "blosc",
                 "shuffle": 1
             },
-            "dtype": "<c8",
-            "fill_value": null,
-            "filters": null,
+            "dtype": "<f4",
+            "fill_value": 20.0,
+            "filters": [
+                {
+                    "astype": "<i2",
+                    "dtype": "<f4",
+                    "id": "fixedscaleoffset",
+                    "offset": 0.00030518043793392735,
+                    "scale": 1638.375
+                }
+            ],
             "order": "C",
             "shape": [
                 3,
@@ -174,16 +241,17 @@
             ],
             "zarr_format": 2
         },
-        "ut/.zattrs": {
+        "u_imag/.zattrs": {
             "_ARRAY_DIMENSIONS": [
                 "con",
                 "lat",
                 "lon"
             ],
-            "standard_name": "tidal_we_velocity_complex_amplitude",
-            "units": "m"
+            "long_name": "Tidal eastward velocity amplitude imag component",
+            "standard_name": "tidal_eastward_velocity_amplitude_imag_component",
+            "units": "m s-1"
         },
-        "vt/.zarray": {
+        "u_real/.zarray": {
             "chunks": [
                 3,
                 19,
@@ -196,9 +264,17 @@
                 "id": "blosc",
                 "shuffle": 1
             },
-            "dtype": "<c8",
-            "fill_value": null,
-            "filters": null,
+            "dtype": "<f4",
+            "fill_value": 20.0,
+            "filters": [
+                {
+                    "astype": "<i2",
+                    "dtype": "<f4",
+                    "id": "fixedscaleoffset",
+                    "offset": 0.00030518043793392735,
+                    "scale": 1638.375
+                }
+            ],
             "order": "C",
             "shape": [
                 3,
@@ -207,14 +283,99 @@
             ],
             "zarr_format": 2
         },
-        "vt/.zattrs": {
+        "u_real/.zattrs": {
             "_ARRAY_DIMENSIONS": [
                 "con",
                 "lat",
                 "lon"
             ],
-            "standard_name": "tidal_ns_velocity_complex_amplitude",
-            "units": "m"
+            "long_name": "Tidal eastward velocity amplitude real component",
+            "standard_name": "tidal_eastward_velocity_amplitude_real_component",
+            "units": "m s-1"
+        },
+        "v_imag/.zarray": {
+            "chunks": [
+                3,
+                19,
+                34
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": 20.0,
+            "filters": [
+                {
+                    "astype": "<i2",
+                    "dtype": "<f4",
+                    "id": "fixedscaleoffset",
+                    "offset": 0.00030518043793392735,
+                    "scale": 1638.375
+                }
+            ],
+            "order": "C",
+            "shape": [
+                3,
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "v_imag/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "con",
+                "lat",
+                "lon"
+            ],
+            "long_name": "Tidal northward velocity amplitude imag component",
+            "standard_name": "tidal_northward_velocity_amplitude_imag_component",
+            "units": "m s-1"
+        },
+        "v_real/.zarray": {
+            "chunks": [
+                3,
+                19,
+                34
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": 20.0,
+            "filters": [
+                {
+                    "astype": "<i2",
+                    "dtype": "<f4",
+                    "id": "fixedscaleoffset",
+                    "offset": 0.00030518043793392735,
+                    "scale": 1638.375
+                }
+            ],
+            "order": "C",
+            "shape": [
+                3,
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "v_real/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "con",
+                "lat",
+                "lon"
+            ],
+            "long_name": "Tidal northward velocity amplitude real component",
+            "standard_name": "tidal_northward_velocity_amplitude_real_component",
+            "units": "m s-1"
         }
     },
     "zarr_consolidated_format": 1

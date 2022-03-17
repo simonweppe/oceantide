@@ -1,0 +1,10 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "con",
+        "lat",
+        "lon"
+    ],
+    "long_name": "Tidal northward velocity amplitude imag component",
+    "standard_name": "tidal_northward_velocity_amplitude_imag_component",
+    "units": "m s-1"
+}

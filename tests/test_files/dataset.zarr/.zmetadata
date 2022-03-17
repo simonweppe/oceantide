@@ -1,0 +1,221 @@
+{
+    "metadata": {
+        ".zattrs": {
+            "description": "Tide constituents"
+        },
+        ".zgroup": {
+            "zarr_format": 2
+        },
+        "con/.zarray": {
+            "chunks": [
+                3
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<U2",
+            "fill_value": null,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3
+            ],
+            "zarr_format": 2
+        },
+        "con/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "con"
+            ],
+            "standard_name": "tidal_constituent",
+            "units": ""
+        },
+        "dep/.zarray": {
+            "chunks": [
+                19,
+                34
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "dep/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lat",
+                "lon"
+            ],
+            "standard_name": "sea_floor_depth_below_mean_sea_level",
+            "units": "m"
+        },
+        "h/.zarray": {
+            "chunks": [
+                3,
+                19,
+                34
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<c8",
+            "fill_value": null,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3,
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "h/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "con",
+                "lat",
+                "lon"
+            ],
+            "standard_name": "tidal_elevation_complex_amplitude",
+            "units": "m"
+        },
+        "lat/.zarray": {
+            "chunks": [
+                19
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                19
+            ],
+            "zarr_format": 2
+        },
+        "lat/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lat"
+            ],
+            "standard_name": "latitude",
+            "units": "degrees_north"
+        },
+        "lon/.zarray": {
+            "chunks": [
+                34
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                34
+            ],
+            "zarr_format": 2
+        },
+        "lon/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lon"
+            ],
+            "standard_name": "longitude",
+            "units": "degrees_east"
+        },
+        "u/.zarray": {
+            "chunks": [
+                3,
+                19,
+                34
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<c8",
+            "fill_value": null,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3,
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "u/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "con",
+                "lat",
+                "lon"
+            ],
+            "standard_name": "tidal_we_velocity_complex_amplitude",
+            "units": "m"
+        },
+        "v/.zarray": {
+            "chunks": [
+                3,
+                19,
+                34
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<c8",
+            "fill_value": null,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3,
+                19,
+                34
+            ],
+            "zarr_format": 2
+        },
+        "v/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "con",
+                "lat",
+                "lon"
+            ],
+            "standard_name": "tidal_ns_velocity_complex_amplitude",
+            "units": "m"
+        }
+    },
+    "zarr_consolidated_format": 1
+}
