@@ -133,17 +133,17 @@ def arakawa_grid(nx, ny, x0, x1, y0, y1, variable):
     """Arakawa grid coordinates for variable.
 
     Args:
-        nx (int): Number of grid point along the x direction.
-        ny (int): Number of grid point along the y direction.
-        x0 (float): Left limit (degrees).
-        x1 (float): Right limit (degrees).
-        y0 (float): Bottom limit (degrees).
-        y1 (float): Left limit (degrees).
-        variable (str): Model variable, one of 'h', 'u', 'v'.
+        - nx (int): Number of grid point along the x direction.
+        - ny (int): Number of grid point along the y direction.
+        - x0 (float): Left limit (degrees).
+        - x1 (float): Right limit (degrees).
+        - y0 (float): Bottom limit (degrees).
+        - y1 (float): Left limit (degrees).
+        - variable (str): Model variable, one of 'h', 'u', 'v'.
 
     Returns:
-        lon (1darray): Longitude coordinates in Arakawa grid for variable.
-        lat (1darray): Latitude coordinates in Arakawa for variable.
+        - lon (1darray): Longitude coordinates in Arakawa grid for variable.
+        - lat (1darray): Latitude coordinates in Arakawa for variable.
 
     """
     dx = (x1 - x0) / nx
@@ -178,3 +178,24 @@ def set_attributes(dset, dataset_type):
             darr.attrs.update(all_attrs.get(dataset_type).get(varname, {}))
     elif isinstance(dset, xr.DataArray):
         dset.attrs.update(all_attrs.get(dataset_type).get(dset.name, {}))
+
+
+def compute_scale_and_offset(vmin, vmax, nbit=16):
+    """Returns the scale_factor and add_offset for packing data.
+
+    Args:
+        - vmin (float): The minumum value in the array to pack.
+        - vmax (float): The maximum value in the array to pack.
+        - nbit (int): The number of bits into which you wish to pack.
+
+    Returns:
+        - scale_factor (float): The scale factor value to use for packing array.
+        - add_offset (float): The add_offset value to use for packing array.
+
+    """
+    if vmax == vmin:
+        scale_factor = 1
+    else:
+        scale_factor = (vmax - vmin) / (2 ** nbit - 1)
+    add_offset = vmin + 2 ** (nbit - 1) * scale_factor
+    return scale_factor, add_offset
