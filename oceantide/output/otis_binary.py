@@ -23,7 +23,7 @@ def to_otis_binary(self, dirname, hfile=True, ufile=False, gfile=False, suffix=N
         - suffix (str): Suffix to define file names, by default defined by cons names.
 
     Return:
-        - filename (dict): NFalseame of files written.
+        - filename (dict): Name of files written.
 
     """
     ds = self._obj.transpose("con", "lon", "lat")

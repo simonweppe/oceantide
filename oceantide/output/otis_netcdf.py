@@ -19,7 +19,7 @@ def to_otis_netcdf(self, dirname, hfile=True, ufile=True, gfile=True, suffix=Non
         - suffix (str): Suffix to define file names, by default defined by cons names.
 
     Return:
-        - filename (dict): NFalseame of files written.
+        - filename (dict): Name of files written.
 
     """
     ds = self._obj.transpose("con", "lon", "lat")
