@@ -648,7 +648,7 @@ class OtisFormatter:
     def _set_attributes(self):
         """Define attributes for formatted dataset."""
         self.ds.dep.attrs = {}
-        set_attributes(self.ds, "oceantide")
+        set_attributes(self.ds, "dataset")
         self.ds.attrs = {"description": "Oceantide tidal constituents"}
 
     def _mask_land(self):

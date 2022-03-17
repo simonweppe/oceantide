@@ -96,6 +96,44 @@ oceantide:
     standard_name: sea_floor_depth_below_mean_sea_level
     long_name: Bathymetry
     units: m
+  h_real:
+    standard_name: tidal_elevation_amplitude_real_component
+    long_name: Tidal elevation amplitude real component
+    units: m
+  h_imag:
+    standard_name: tidal_elevation_amplitude_imag_component
+    long_name: Tidal elevation amplitude imag component
+    units: m
+  u_real:
+    standard_name: tidal_eastward_velocity_amplitude_real_component
+    long_name: Tidal eastward velocity amplitude real component
+    units: m s-1
+  u_imag:
+    standard_name: tidal_eastward_velocity_amplitude_imag_component
+    long_name: Tidal eastward velocity amplitude imag component
+    units: m s-1
+  v_real:
+    standard_name: tidal_northward_velocity_amplitude_real_component
+    long_name: Tidal northward velocity amplitude real component
+    units: m s-1
+  v_imag:
+    standard_name: tidal_northward_velocity_amplitude_real_component
+    long_name: Tidal northward velocity amplitude imag component
+    units: m s-1
+  lon:
+    standard_name: longitude
+    long_name: Longitude
+    units: degree_east
+  lat:
+    standard_name: latitude
+    long_name: Latitude
+    units: degree_north
+
+dataset:
+  dep:
+    standard_name: sea_floor_depth_below_mean_sea_level
+    long_name: Bathymetry
+    units: m
   h:
     standard_name: tidal_elevation_complex_amplitude
     long_name: Tidal elevation complex amplitude

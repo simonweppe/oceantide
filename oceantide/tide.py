@@ -112,7 +112,7 @@ class Tide(metaclass=Plugin):
         darr = self._obj[component]
         darr = np.rad2deg(np.arctan2(-darr.imag, darr.real)) % 360
         darr.name = f"phi{component}"
-        set_attributes(darr, "oceantide")
+        set_attributes(darr, "dataset")
         return darr
 
     def predict(self, times, time_chunk=50, components=["h", "u", "v"]):
