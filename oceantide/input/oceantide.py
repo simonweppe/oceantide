@@ -1,12 +1,15 @@
-"""Read Oceantide file format."""
-import warnings
+"""Read oceantide file format."""
 import xarray as xr
 
 from oceantide.tide import Tide
+from oceantide.core.utils import set_attributes
 
 
 def read_oceantide(filename=None, engine="zarr", chunks={}, **kwargs):
-    """Read Oceantide file format.
+    """Read oceantide file format.
+
+    The oceantide format has complex constituents variables split into real and imag
+        variables allowing for better packing and making it easier to support netcdf.
 
     Args:
         - filename (str): Name of Oceantide dataset to read.
@@ -15,18 +18,12 @@ def read_oceantide(filename=None, engine="zarr", chunks={}, **kwargs):
         - kwargs: Extra kwargs to pass to xr.open_dataset.
 
     Returns:
-        - Formatted dataset with the tide accessor.
+        - Formatted dataset with complex variables and the tide accessor.
 
     """
-    dset = xr.open_dataset(filename, engine=engine, chunks=chunks, **kwargs)
-
-    # For backward compatibility
-    if "et" in dset.data_vars and "h" not in dset.data_vars:
-        warnings.warn(
-            "Oceantide naming convention has been changed, only datasets with "
-            "variables ['dep','h','u','v'] will be supported in the future.",
-            category=FutureWarning,
-        )
-        dset = dset.rename({"et": "h", "ut": "u", "vt": "v", "depth": "dep"})
-
-    return dset
+    dset = xr.open_dataset(filename, engine="zarr", chunks=chunks, **kwargs)
+    dsout = dset[["dep"]]
+    for v in ["h", "u", "v"]:
+        dsout[v] = dset[f"{v}_real"] + 1j * dset[f"{v}_imag"]
+    set_attributes(dsout, "dataset")
+    return dsout
