@@ -615,7 +615,9 @@ class OtisFormatter:
     def _to_complex(self):
         """Merge real and imaginary components into a complex variable."""
         for v in ["h", "u", "v"]:
-            self.ds[f"{v}"] = self.ds[f"{v}Re"] + 1j * self.ds[f"{v}Im"]
+            real = self.ds[f"{v}Re"].astype("float32")
+            imag = self.ds[f"{v}Im"].astype("float32") * 1j
+            self.ds[f"{v}"] = real + imag
             self.ds = self.ds.drop_vars([f"{v}Re", f"{v}Im"])
 
     def _to_single_grid(self):
