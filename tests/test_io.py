@@ -67,3 +67,15 @@ def test_supported_oceantide_formats(tmpdir):
     with pytest.raises(ValueError):
         dset.tide.to_oceantide(tmpdir / "newoceantide.txt")
     dset.tide.to_oceantide(tmpdir / "newoceantide.txt", file_format="netcdf")
+
+
+def test_write_otis_netcdf(tmpdir):
+    dset = read_otis_netcdf(FILES_DIR / "otis_netcdf/Model_test")
+    dset.tide.to_otis_netcdf(dirname=tmpdir, suffix="")
+    dset2 = read_otis_netcdf(tmpdir / "model")
+
+
+def test_write_otis_binary(tmpdir):
+    dset = read_otis_binary(FILES_DIR / "otis_binary/Model_rag")
+    dset.tide.to_otis_binary(dirname=tmpdir, suffix="")
+    dset2 = read_otis_binary(tmpdir / "model")
