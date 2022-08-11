@@ -96,7 +96,9 @@ def u_from_z(dz, mz=None, mu=None):
     if mu is None:
         mu = mz * mz.roll(nx=1, roll_coords=False)
     iku = (mz.fillna(1.0) + mz.fillna(1.0).roll(nx=1, roll_coords=False)) == 1
-    du = mu.fillna(1.0) * (dz + dz.roll(nx=1, roll_coords=False)) / 2
+    if "nc" in dz.dims:
+        iku = iku.expand_dims({"nc": dz.nc})
+    du = (dz + dz.roll(nx=1, roll_coords=False)) * mu.fillna(1.0) / 2
     du = xr.where(iku, dz, du)
     return du
 
@@ -123,7 +125,9 @@ def v_from_z(dz, mz=None, mv=None):
     if mv is None:
         mv = mz * mz.roll(ny=1, roll_coords=False)
     ikv = (mz.fillna(1.0) + mz.fillna(1.0).roll(ny=1, roll_coords=False)) == 1
-    dv = mv.fillna(1.0) * (dz + dz.roll(ny=1, roll_coords=False)) / 2
+    if "nc" in dz.dims:
+        ikv = ikv.expand_dims({"nc": dz.nc})
+    dv = (dz + dz.roll(ny=1, roll_coords=False)) * mv.fillna(1.0) / 2
     dv = xr.where(ikv, dz, dv)
     return dv
 
@@ -145,7 +149,9 @@ def z_from_u(du, mu=None, mz=None):
     if mz is None:
         mz = mu * mu.roll(nx=-1, roll_coords=False)
     ikz = (mu.fillna(1.0) + mu.fillna(1.0).roll(nx=-1, roll_coords=False)) == 1
-    dz = mz.fillna(1.0) * (du + du.roll(nx=-1, roll_coords=False)) / 2
+    if "nc" in du.dims:
+        ikz = ikz.expand_dims({"nc": du.nc})
+    dz = (du + du.roll(nx=-1, roll_coords=False)) * mz.fillna(1.0) / 2
     dz = xr.where(ikz, du, dz)
     return dz
 
@@ -167,7 +173,9 @@ def z_from_v(dv, mv=None, mz=None):
     if mz is None:
         mz = mv * mv.roll(ny=-1, roll_coords=False)
     ikz = (mv.fillna(1.0) + mv.fillna(1.0).roll(ny=-1, roll_coords=False)) == 1
-    dz = mz.fillna(1.0) * (dv + dv.roll(ny=-1, roll_coords=False)) / 2
+    if "nc" in dv.dims:
+        ikz = ikz.expand_dims({"nc": dv.nc})
+    dz = (dv + dv.roll(ny=-1, roll_coords=False)) * mz.fillna(1.0) / 2
     dz = xr.where(ikz, dv, dz)
     return dz
 
@@ -444,7 +452,6 @@ def write_otis_bin_u(ufile, URe, UIm, VRe, VIm, con, lon, lat):
 
     """
     nc, nx, ny = URe.shape
-
     URe = URe.fillna(0.0)
     UIm = UIm.fillna(0.0)
     VRe = VRe.fillna(0.0)
