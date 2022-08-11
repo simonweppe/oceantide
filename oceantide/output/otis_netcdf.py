@@ -26,7 +26,9 @@ def to_otis_netcdf(self, dirname, hfile=True, ufile=True, gfile=True, suffix=Non
     ds = ds.rename({"con": "nc", "lon": "nx", "lat": "ny"})
     ds = ds.fillna(0.0)
 
-    suffix = suffix or "".join(list(ds.nc.values)).lower()
+    if suffix is None:
+        suffix = "".join(list(ds.nc.values)).lower()
+
     lat_z, lon_z = np.meshgrid(ds.ny, ds.nx)
     dx = float(ds.nx[1] - ds.nx[0])
     dy = float(ds.ny[1] - ds.ny[0])
@@ -46,7 +48,8 @@ def to_otis_netcdf(self, dirname, hfile=True, ufile=True, gfile=True, suffix=Non
 
     # Write elevations
     if hfile:
-        filenames["hfile"] = Path(dirname) / f"h_{suffix}.nc"
+        fname = f"h_{suffix.lstrip('_')}.nc" if suffix else "h.nc"
+        filenames["hfile"] = Path(dirname) / fname
 
         ha = self.amplitude("h").transpose("con", "lon", "lat")
         ha = ha.rename({"con": "nc", "lon": "nx", "lat": "ny"}).drop(["nc", "nx", "ny"])
@@ -68,7 +71,8 @@ def to_otis_netcdf(self, dirname, hfile=True, ufile=True, gfile=True, suffix=Non
 
     # Write transports
     if ufile:
-        filenames["ufile"] = Path(dirname) / f"u_{suffix}.nc"
+        fname = f"u_{suffix.lstrip('_')}.nc" if suffix else "u.nc"
+        filenames["ufile"] = Path(dirname) / fname
 
         ua = self.amplitude("u").transpose("con", "lon", "lat")
         ua = ua.rename({"con": "nc", "lon": "nx", "lat": "ny"}).drop(["nc", "nx", "ny"])
@@ -111,7 +115,8 @@ def to_otis_netcdf(self, dirname, hfile=True, ufile=True, gfile=True, suffix=Non
 
     # Write grid
     if gfile:
-        filenames["gfile"] = Path(dirname) / f"grid_{suffix}.nc"
+        fname = f"grid_{suffix.lstrip('_')}.nc" if suffix else "grid.nc"
+        filenames["gfile"] = Path(dirname) / fname
 
         dsout = xr.Dataset()
         dsout["lon_z"] = xr.DataArray(lon_z, dims=("nx", "ny"))
@@ -140,6 +145,11 @@ def to_otis_netcdf(self, dirname, hfile=True, ufile=True, gfile=True, suffix=Non
         dsout.attrs = {"title": "OTIS Arakawa C-grid file", "source": "Oceantide"}
 
         dsout.to_netcdf(filenames["gfile"])
+
+    fname = f"model_{suffix.lstrip('_')}" if suffix else "model"
+    with open(Path(dirname) / fname, mode="w") as stream:
+        for filename in filenames.values():
+            stream.write(f"./{filename}\n")
 
     return filenames
 

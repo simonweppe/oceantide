@@ -11,7 +11,7 @@ from oceantide.core.otis import (
 )
 
 
-def to_otis_binary(self, dirname, hfile=True, ufile=False, gfile=False, suffix=None):
+def to_otis_binary(self, dirname, hfile=True, ufile=True, gfile=True, suffix=None):
     """Write dataset as Otis binary format.
 
     Args:
@@ -30,12 +30,15 @@ def to_otis_binary(self, dirname, hfile=True, ufile=False, gfile=False, suffix=N
     ds = ds.rename({"con": "nc", "lon": "nx", "lat": "ny"})
     ds = ds.fillna(0.0)
 
-    suffix = suffix or "".join(list(ds.nc.values)).lower()
+    if suffix is None:
+        suffix = "".join(list(ds.nc.values)).lower()
+
     filenames = {}
 
     # Write elevations
     if hfile:
-        filenames["hfile"] = Path(dirname) / f"h_{suffix}"
+        fname = f"h_{suffix.lstrip('_')}" if suffix else "h"
+        filenames["hfile"] = Path(dirname) / fname
         write_otis_bin_h(
             hfile=filenames["hfile"],
             hRe=ds.h.real,
@@ -47,7 +50,8 @@ def to_otis_binary(self, dirname, hfile=True, ufile=False, gfile=False, suffix=N
 
     # Write transports
     if ufile:
-        filenames["ufile"] = Path(dirname) / f"u_{suffix}"
+        fname = f"u_{suffix.lstrip('_')}" if suffix else "u"
+        filenames["ufile"] = Path(dirname) / fname
         mz = ds.dep > 0
         mu = mz * mz.roll(nx=1, roll_coords=False)
         mv = mz * mz.roll(ny=1, roll_coords=False)
@@ -64,7 +68,8 @@ def to_otis_binary(self, dirname, hfile=True, ufile=False, gfile=False, suffix=N
 
     # Write grid
     if gfile:
-        filenames["gfile"] = Path(dirname) / f"grid_{suffix}"
+        fname = f"grid_{suffix.lstrip('_')}" if suffix else "grid"
+        filenames["gfile"] = Path(dirname) / fname
         write_otis_bin_grid(
             gfile=filenames["gfile"],
             hz=ds.dep,
@@ -73,5 +78,10 @@ def to_otis_binary(self, dirname, hfile=True, ufile=False, gfile=False, suffix=N
             lat=ds.ny,
             dt=12.0,
         )
+
+    fname = f"model_{suffix.lstrip('_')}" if suffix else "model"
+    with open(Path(dirname) / fname, mode="w") as stream:
+        for filename in filenames.values():
+            stream.write(f"./{filename}\n")
 
     return filenames
