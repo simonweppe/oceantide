@@ -82,6 +82,6 @@ def to_otis_binary(self, dirname, hfile=True, ufile=True, gfile=True, suffix=Non
     fname = f"model_{suffix.lstrip('_')}" if suffix else "model"
     with open(Path(dirname) / fname, mode="w") as stream:
         for filename in filenames.values():
-            stream.write(f"./{filename}\n")
+            stream.write(f"./{filename.name}\n")
 
     return filenames
