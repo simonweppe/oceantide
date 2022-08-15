@@ -1,6 +1,6 @@
 """Top-level package for oceantide."""
 
-__version__ = "0.3.2"
+__version__ = "0.3.3"
 __author__ = "Oceanum Developers"
 __contact__ = "developers@oceanum.science"
 __url__ = "http://github.com/wavespectra/oceantide"
