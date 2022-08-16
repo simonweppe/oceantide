@@ -148,6 +148,16 @@ class Tide(metaclass=Plugin):
             )
 
         cons = list(self._obj.con.values)
+
+        # Slice out unsupported cons
+        non_supported = set(cons) - OMEGA.keys()
+        if non_supported:
+            warnings.warn(f"Cons {non_supported} not supported and will be ignored")
+            cons = [con for con in cons if con not in non_supported]
+            ds = self._obj.sel(con=cons)
+        else:
+            ds = self._obj
+
         pu, pf, v0u = nodal(tsec[0] / 86400 + 48622.0, cons)
 
         # Variables for calculations
@@ -162,14 +172,14 @@ class Tide(metaclass=Plugin):
         sin = da.sin(tsec * omega + v0u + pu)
 
         dset = xr.Dataset()
-        if "dep" in self._obj.data_vars:
-            dset["dep"] = self._obj.dep
+        if "dep" in ds.data_vars:
+            dset["dep"] = ds.dep
         if "h" in components:
-            dset["h"] = cos * pf * self._obj["h"].real - sin * pf * self._obj["h"].imag
+            dset["h"] = cos * pf * ds["h"].real - sin * pf * ds["h"].imag
         if "u" in components:
-            dset["u"] = cos * pf * self._obj["u"].real - sin * pf * self._obj["u"].imag
+            dset["u"] = cos * pf * ds["u"].real - sin * pf * ds["u"].imag
         if "v" in components:
-            dset["v"] = cos * pf * self._obj["v"].real - sin * pf * self._obj["v"].imag
+            dset["v"] = cos * pf * ds["v"].real - sin * pf * ds["v"].imag
         dset = dset.sum(dim="con", skipna=False)
         dset = self._set_attributes_output(dset)
 
