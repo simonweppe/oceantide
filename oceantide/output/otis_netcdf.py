@@ -22,7 +22,7 @@ def to_otis_netcdf(self, dirname, hfile=True, ufile=True, gfile=True, suffix=Non
         - filename (dict): Name of files written.
 
     """
-    ds = self._obj.transpose("con", "lon", "lat")
+    ds = self._obj.transpose("con", "lon", "lat", ...)
     ds = ds.rename({"con": "nc", "lon": "nx", "lat": "ny"})
     ds = ds.fillna(0.0)
 
@@ -51,9 +51,9 @@ def to_otis_netcdf(self, dirname, hfile=True, ufile=True, gfile=True, suffix=Non
         fname = f"h_{suffix.lstrip('_')}.nc" if suffix else "h.nc"
         filenames["hfile"] = Path(dirname) / fname
 
-        ha = self.amplitude("h").transpose("con", "lon", "lat")
+        ha = self.amplitude("h").transpose("con", "lon", "lat", ...)
         ha = ha.rename({"con": "nc", "lon": "nx", "lat": "ny"}).drop(["nc", "nx", "ny"])
-        hp = self.phase("h").transpose("con", "lon", "lat")
+        hp = self.phase("h").transpose("con", "lon", "lat", ...)
         hp = hp.rename({"con": "nc", "lon": "nx", "lat": "ny"}).drop(["nc", "nx", "ny"])
         dsout = xr.Dataset()
         dsout["con"] = xr.DataArray(cons, dims=("nc"))
@@ -74,13 +74,13 @@ def to_otis_netcdf(self, dirname, hfile=True, ufile=True, gfile=True, suffix=Non
         fname = f"u_{suffix.lstrip('_')}.nc" if suffix else "u.nc"
         filenames["ufile"] = Path(dirname) / fname
 
-        ua = self.amplitude("u").transpose("con", "lon", "lat")
+        ua = self.amplitude("u").transpose("con", "lon", "lat", ...)
         ua = ua.rename({"con": "nc", "lon": "nx", "lat": "ny"}).drop(["nc", "nx", "ny"])
-        up = self.phase("u").transpose("con", "lon", "lat")
+        up = self.phase("u").transpose("con", "lon", "lat", ...)
         up = up.rename({"con": "nc", "lon": "nx", "lat": "ny"}).drop(["nc", "nx", "ny"])
-        va = self.amplitude("v").transpose("con", "lon", "lat")
+        va = self.amplitude("v").transpose("con", "lon", "lat", ...)
         va = va.rename({"con": "nc", "lon": "nx", "lat": "ny"}).drop(["nc", "nx", "ny"])
-        vp = self.phase("v").transpose("con", "lon", "lat")
+        vp = self.phase("v").transpose("con", "lon", "lat", ...)
         vp = vp.rename({"con": "nc", "lon": "nx", "lat": "ny"}).drop(["nc", "nx", "ny"])
         dsout = xr.Dataset()
         dsout["con"] = dsout["con"] = xr.DataArray(cons, dims=("nc"))
