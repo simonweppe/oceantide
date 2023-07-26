@@ -1,11 +1,6 @@
 """Top-level package for oceantide."""
 
-__version__ = "0.4.2"
-__author__ = "Oceanum Developers"
-__contact__ = "developers@oceanum.science"
-__url__ = "http://github.com/wavespectra/oceantide"
-__description__ = "Library for ocean tide prediction"
-__keywords__ = "ocean tide prediction constituents xarray accessor"
+__version__ = "0.5.0"
 
 
 def _import_read_functions(pkgname="input"):
