@@ -69,7 +69,7 @@ def indices_open_boundary(mz):
 
     # Concatenate boundaries and keep water points
     iob = xr.concat([dsl, dst, dsr, dsb], dim="n")
-    iob = iob.where(iob == 1, drop=True)
+    iob = iob.where((iob == 1).compute(), drop=True)
 
     return np.array([iob.nx.values, iob.ny.values], dtype=INT)
 
