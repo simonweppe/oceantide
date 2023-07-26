@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "oceantide"
+description = "Library for ocean tide prediction"
+readme = "README.rst"
+license = { file = "LICENSE" }
+keywords = ["ocean", "tide", "prediction", "constituents", "xarray", "otis"]
+authors = [
+  { name = "Oceanum Ltd", email="developers@oceanum.science" },
+]
+maintainers = [
+  {name = "Rafael Guedes", email = "r.guedes@oceanum.science"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "click",
+    "dask",
+    "gcsfs",
+    "netcdf4",
+    "numpy",
+    "scipy",
+    "xarray",
+    "zarr",
+]
+dynamic = ["version"]
+
+[project.urls]
+"Source" = "https://github.com/oceanum/oceantide"
+"Tracker" = "https://github.com/oceanum/oceantide/issues"
+"Changelog" = "https://github.com/oceanum/oceantide/blob/main/HISTORY.rst"
+
+[project.scripts]
+oceantide = "oceantide.cli:main"
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.setuptools.packages.find]
+exclude = ["docs", "tests"]
+
+[tool.setuptools.package-data]
+"oceantide.core" = ["*.yml"]
+
+[tool.setuptools.dynamic]
+version = {attr = "oceantide.__version__"}
+
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
