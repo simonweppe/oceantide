@@ -27,12 +27,12 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
 ]
 requires-python = ">=3.8"
 dependencies = [
     "click",
     "dask",
-    "gcsfs",
     "netcdf4",
     "numpy",
     "scipy",
@@ -41,6 +41,19 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[project.optional-dependencies]
+test = [
+  "pytest",
+]
+extra = [
+  "gcsfs",
+]
+docs = [
+  "pydata-sphinx-theme",
+  "sphinx",
+  "sphinxcontrib-programoutput",
+]
+
 [project.urls]
 "Source" = "https://github.com/oceanum/oceantide"
 "Tracker" = "https://github.com/oceanum/oceantide/issues"
@@ -48,9 +61,6 @@ dynamic = ["version"]
 
 [project.scripts]
 oceantide = "oceantide.cli:main"
-
-[project.optional-dependencies]
-test = ["pytest"]
 
 [tool.setuptools.packages.find]
 exclude = ["docs", "tests"]
