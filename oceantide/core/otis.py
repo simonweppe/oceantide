@@ -404,7 +404,6 @@ def read_otis_bin_grid(gfile):
 
     """
     with open(gfile, "rb") as f:
-
         f.seek(4, 0)
         nx, ny = np.fromfile(f, dtype=INT, count=2)
         y0, y1, x0, x1 = np.fromfile(f, dtype=FLOAT, count=4)
@@ -495,7 +494,6 @@ def write_otis_bin_u(ufile, URe, UIm, VRe, VIm, con, lon, lat):
     VIm = VIm.fillna(0.0)
 
     with open(ufile, "wb") as fid:
-
         # Header
         delim = np.array(4 * (nc + 7), dtype=INT)
         delim.tofile(fid)
@@ -550,7 +548,6 @@ def write_otis_bin_h(hfile, hRe, hIm, con, lon, lat):
         con = [f"{c.decode('utf-8').lower():4s}" for c in con]
 
     with open(hfile, "wb") as fid:
-
         # Header
         delim = np.array(4 * (nc + 7), dtype=INT)
         delim.tofile(fid)
@@ -592,7 +589,6 @@ def write_otis_bin_grid(gfile, hz, mz, lon, lat, dt=12):
     nob = iob.shape[1]
 
     with open(gfile, "wb") as fid:
-
         # Header
         delim = np.array(32, dtype=INT)
         delim.tofile(fid)

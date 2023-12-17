@@ -369,7 +369,7 @@ def cBEpm(g, f, sigma, nu, kappa, z, h):
 
 
 def get_BE(g, alpha, h, z, nu, kappa):
-    """ Child function of cBEpm """
+    """Child function of cBEpm"""
 
     z = z.flatten()
     z_h = z / h
@@ -390,7 +390,7 @@ def get_BE(g, alpha, h, z, nu, kappa):
 
         for t in np.arange(2, T):
             t2 = 2 * t
-            A = (1 - z_h ** t2) / t2 + nu_kh
+            A = (1 - z_h**t2) / t2 + nu_kh
             B = B * ah * ah / (t2 - 1) / (t2 - 2)
             series_sum = series_sum + A * B
 
@@ -598,7 +598,6 @@ def prep_plot(SEMA, ECC, INC, PHA):
 
 
 if __name__ == "__main__":
-
     """
     Replicate the tidal ellipse example file from Zhigang Xu's tidal_ellipse
     MATLAB toolbox.

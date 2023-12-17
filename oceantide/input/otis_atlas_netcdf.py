@@ -106,8 +106,8 @@ def read_otis_atlas_netcdf(
 
 
 def indices(
-        lon: np.ndarray, lat: np.ndarray, x0: float, x1: float, y0: float, y1: float
-    ) -> tuple[int]:
+    lon: np.ndarray, lat: np.ndarray, x0: float, x1: float, y0: float, y1: float
+) -> tuple[int]:
     """Indices of coordinates in lon and lat arrays.
 
     Parameters

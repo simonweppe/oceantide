@@ -233,6 +233,6 @@ def compute_scale_and_offset(vmin: float, vmax: float, nbit: int = 16) -> tuple[
     if vmax == vmin:
         scale_factor = 1
     else:
-        scale_factor = (vmax - vmin) / (2 ** nbit - 1)
+        scale_factor = (vmax - vmin) / (2**nbit - 1)
     add_offset = vmin + 2 ** (nbit - 1) * scale_factor
     return scale_factor, add_offset

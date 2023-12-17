@@ -13,8 +13,8 @@ from oceantide.tide import Tide
 
 
 def read_otis_binary(
-        filename: str = None, gfile: str = None, hfile: str = None, ufile: str = None
-    ):
+    filename: str = None, gfile: str = None, hfile: str = None, ufile: str = None
+):
     """Read Otis Binary file format.
 
     Parameters
@@ -70,7 +70,6 @@ def read_otis_binary(
 
 
 if __name__ == "__main__":
-
     hfile = "/data/tide/tpxo9v4a/bin/DATA/h_tpxo9.v4a"
     ufile = "/data/tide/tpxo9v4a/bin/DATA/u_tpxo9.v4a"
     gfile = "/data/tide/tpxo9v4a/bin/DATA/grid_tpxo9.v4a"

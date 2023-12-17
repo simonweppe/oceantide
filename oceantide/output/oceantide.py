@@ -7,9 +7,9 @@ from zarr.codecs import FixedScaleOffset
 from oceantide.core.utils import set_attributes, compute_scale_and_offset
 
 
-AMPMIN = -20.
-AMPMAX = 20.
-DEPMIN = 0.
+AMPMIN = -20.0
+AMPMAX = 20.0
+DEPMIN = 0.0
 DEPMAX = 12000.0
 SCALE_FACTOR_D, ADD_OFFSET_D = compute_scale_and_offset(DEPMIN, DEPMAX)
 SCALE_FACTOR_A, ADD_OFFSET_A = compute_scale_and_offset(AMPMIN, AMPMAX)
@@ -18,6 +18,7 @@ FILE_FORMATS = {
     ".nc": "netcdf",
     ".zarr": "zarr",
 }
+
 
 def to_oceantide(self, filename: str, file_format: str = None, **kwargs):
     """Write dataset as Oceantide format.
@@ -84,7 +85,7 @@ def _write_zarr(dset: xr.Dataset, filename: str, **kwargs):
     for varname, dvar in dset.data_vars.items():
         if varname == "dep":
             continue
-        dvar.encoding = {"filters": [fa], "_FillValue": AMPMAX, "dtype":  kw["dtype"]}
+        dvar.encoding = {"filters": [fa], "_FillValue": AMPMAX, "dtype": kw["dtype"]}
 
     dset.to_zarr(filename, **kwargs)
 
@@ -102,11 +103,7 @@ def _write_netcdf(dset: xr.Dataset, filename: str, **kwargs):
         Keyword argument to pass to to_netcdf method.
 
     """
-    encoding = {
-        "zlib": True,
-        "_FillValue": np.int16(2 ** 16 / 2 - 1),
-        "dtype": "int16"
-    }
+    encoding = {"zlib": True, "_FillValue": np.int16(2**16 / 2 - 1), "dtype": "int16"}
     encd = {**encoding, **{"scale_factor": SCALE_FACTOR_D, "add_offset": ADD_OFFSET_D}}
     enca = {**encoding, **{"scale_factor": SCALE_FACTOR_A, "add_offset": ADD_OFFSET_A}}
 

@@ -7,8 +7,8 @@ from oceantide.tide import Tide
 
 
 def read_otis_netcdf(
-        filename: str = None, gfile: str = None, hfile: str = None, ufile: str = None
-    ):
+    filename: str = None, gfile: str = None, hfile: str = None, ufile: str = None
+):
     """Read Otis Netcdf file format.
 
     Parameters

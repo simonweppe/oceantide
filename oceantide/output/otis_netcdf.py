@@ -13,7 +13,7 @@ def to_otis_netcdf(
     hfile: bool = True,
     ufile: bool = True,
     gfile: bool = True,
-    suffix: bool = None
+    suffix: bool = None,
 ) -> dict:
     """Write dataset as Otis binary format.
 
