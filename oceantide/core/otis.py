@@ -13,15 +13,20 @@ INT = np.dtype(">i4")
 FLOAT = np.dtype(">f4")
 
 
-def theta_lim(lon, lat):
+def theta_lim(lon: np.ndarray, lat: np.ndarray) -> np.ndarray:
     """Grid limits (y0, y1, x0, x1).
 
-    Args:
-        - lon (DataArray, 1darray): Longitude coordinates at the cell centre (Z-nodes).
-        - lat (DataArray, 1darray): Latitude coordinates at the cell centre (Z-nodes).
+    Parameters
+    ----------
+    lon (DataArray, 1darray)
+        Longitude coordinates at the cell centre (Z-nodes).
+    lat (DataArray, 1darray)
+        Latitude coordinates at the cell centre (Z-nodes).
 
-    Return:
-        - theta_lim (1darray): Grid limits with dtype for writing to binary file.
+    Returns
+    -------
+    theta_lim (1darray)
+        Grid limits with dtype for writing to binary file.
 
     """
     if lon.ndim > 1:
@@ -45,15 +50,19 @@ def theta_lim(lon, lat):
     return np.hstack([y0, y1, x0, x1]).astype(FLOAT)
 
 
-def indices_open_boundary(mz):
+def indices_open_boundary(mz: np.ndarray):
     """Indices of open boundary iob.
 
-    Args:
-        - mz (DataArray): Land mask in Otis format :math:`m_z(nx,ny)`.
+    Parameters
+    ----------
+    mz (DataArray)
+        Land mask in Otis format :math:`m_z(nx,ny)`.
 
-    Return:
-        - iob (2darray): Indices of open boundary :math:`iob(2,nob)`. Longitude and
-          latitude indices are defined in the first and second rows respectively.
+    Returns
+    -------
+    iob (2darray)
+        Indices of open boundary :math:`iob(2,nob)`. Longitude and latitude indices
+        are defined in the first and second rows respectively.
 
     """
     nx, ny = mz.shape
@@ -74,21 +83,31 @@ def indices_open_boundary(mz):
     return np.array([iob.nx.values, iob.ny.values], dtype=INT)
 
 
-def u_from_z(dz, mz=None, mu=None):
+def u_from_z(
+    dz: xr.DataArray, mz: xr.DataArray = None, mu: xr.DataArray = None
+) -> xr.DataArray:
     """Interpolate data from Z-nodes onto U-Nodes.
 
-    Args:
-        - dz (DataArray): Data at Z-nodes to interpolate :math:`d_z(...,nx,ny)`.
-        - mz (DataArray): Land mask at Z-nodes :math:`m_z(nx,ny)`.
-        - mu (DataArray): Land mask at U-nodes :math:`m_u(nx,ny)`.
+    Parameters
+    ----------
+    dz (DataArray)
+        Data at Z-nodes to interpolate :math:`d_z(...,nx,ny)`.
+    mz (DataArray)
+        Land mask at Z-nodes :math:`m_z(nx,ny)`.
+    mu (DataArray)
+        Land mask at U-nodes :math:`m_u(nx,ny)`.
 
-    Returns:
-        - du (DataArray): Data interpolated at U-nodes :math:`d_u(...,nx,ny)`.
+    Returns
+    -------
+    du (DataArray)
+        Data interpolated at U-nodes :math:`d_u(...,nx,ny)`.
 
-    Note:
-        - Masks should be defined by 0 over land and either 1 or nan over water.
-        - If mz is not provided it is defined from missing values in dz.
-        - If mu is not provided it is interpolated from mz.
+    Notes
+    -----
+
+    - Masks should be defined by 0 over land and either 1 or nan over water.
+    - If mz is not provided it is defined from missing values in dz.
+    - If mu is not provided it is interpolated from mz.
 
     """
     if mz is None:
@@ -103,21 +122,31 @@ def u_from_z(dz, mz=None, mu=None):
     return du
 
 
-def v_from_z(dz, mz=None, mv=None):
+def v_from_z(
+    dz: xr.DataArray, mz: xr.DataArray = None, mv: xr.DataArray = None
+) -> xr.DataArray:
     """Interpolate data from Z-nodes onto V-Nodes.
 
-    Args:
-        - dz (DataArray): Data at Z-nodes to interpolate :math:`d_z(...,nx,ny)`.
-        - mz (DataArray): Land mask at Z-nodes :math:`m_z(nx,ny)`.
-        - mv (DataArray): Land mask at V-nodes :math:`m_v(nx,ny)`.
+    Parameters
+    ----------
+    dz (DataArray)
+        Data at Z-nodes to interpolate :math:`d_z(...,nx,ny)`.
+    mz (DataArray)
+        Land mask at Z-nodes :math:`m_z(nx,ny)`.
+    mv (DataArray)
+        Land mask at V-nodes :math:`m_v(nx,ny)`.
 
-    Returns:
-        - dv (DataArray): Data interpolated at V-nodes :math:`d_v(...,nx,ny)`.
+    Returns
+    -------
+    dv (DataArray)
+        Data interpolated at V-nodes :math:`d_v(...,nx,ny)`.
 
-    Note:
-        - Masks should be defined by 0 over land and either 1 or nan over water.
-        - If mz is not provided it is defined from missing values in dz.
-        - If mv is not provided it is interpolated from mz.
+    Notes
+    -----
+
+    - Masks should be defined by 0 over land and either 1 or nan over water.
+    - If mz is not provided it is defined from missing values in dz.
+    - If mv is not provided it is interpolated from mz.
 
     """
     if mz is None:
@@ -132,16 +161,24 @@ def v_from_z(dz, mz=None, mv=None):
     return dv
 
 
-def z_from_u(du, mu=None, mz=None):
+def z_from_u(
+    du: xr.DataArray, mu: xr.DataArray = None, mz: xr.DataArray = None
+) -> xr.DataArray:
     """Interpolate data from U-nodes onto Z-nodes.
 
-    Args:
-        - du (DataArray): Data at U-nodes to interpolate :math:`d_u(...,nx,ny)`.
-        - mu (DataArray): Land mask at U-nodes :math:`m_u(nx,ny)`.
-        - mz (DataArray): Land mask at Z-nodes :math:`m_z(nx,ny)`.
+    Parameters
+    ----------
+    du (DataArray)
+        Data at U-nodes to interpolate :math:`d_u(...,nx,ny)`.
+    mu (DataArray)
+        Land mask at U-nodes :math:`m_u(nx,ny)`.
+    mz (DataArray)
+        Land mask at Z-nodes :math:`m_z(nx,ny)`.
 
-    Returns:
-        - dz (DataArray): Data interpolated at Z-nodes :math:`d_z(...,nx,ny)`.
+    Returns
+    -------
+    dz (DataArray)
+        Data interpolated at Z-nodes :math:`d_z(...,nx,ny)`.
 
     """
     if mu is None:

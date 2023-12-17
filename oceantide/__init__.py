@@ -3,12 +3,18 @@
 __version__ = "0.5.0"
 
 
-def _import_read_functions(pkgname="input"):
+def _import_read_functions(pkgname: str = "input"):
     """Make read functions available at module level.
 
+    Parameters
+    ----------
+    pkgname (str)
+        Name of the package to import functions from.
+
     Functions are imported here if:
-        they are defined in a module wavespectra.input.{modname}
-        they are named as read_{modname}
+
+    - they are defined in a module wavespectra.input.{modname}
+    - they are named as read_{modname}
 
     """
     import os

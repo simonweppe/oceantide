@@ -33,27 +33,45 @@ CONS = [
 
 
 def read_otis_atlas_netcdf(
-    dirname, x0=None, x1=None, y0=None, y1=None, nxchunk=500, nychunk=500
-):
+    dirname: str,
+    x0: float = None,
+    x1: float = None,
+    y0: float = None,
+    y1: float = None,
+    nxchunk: int = 500,
+    nychunk: int = 500,
+) -> xr.Dataset:
     """Read Otis Netcdf file format.
 
-    Args:
-        - dirname (str): Path name with all netcdf Atlas files. Atlas files are
-          organised as one grid file and one file per constituent for uv and h.
-        - x0 (float): Longitude left corner to read.
-        - x1 (float): Longitude right corner to read.
-        - y0 (float): Latitude bottom corner to read.
-        - y1 (float): Latitude top corner to read.
-        - nxchunk (int): Chunk size along the x-axis.
-        - nychunk (int): Chunk size along the y-axis.
+    Parameters
+    ----------
+    dirname (str)
+        Path name with all netcdf Atlas files. Atlas files are organised as one grid
+        file and one file per constituent for uv and h.
+    x0 (float)
+        Longitude left corner to read.
+    x1 (float)
+        Longitude right corner to read.
+    y0 (float)
+        Latitude bottom corner to read.
+    y1 (float)
+        Latitude top corner to read.
+    nxchunk (int)
+        Chunk size along the x-axis.
+    nychunk (int)
+        Chunk size along the y-axis.
 
-    Returns:
-        - Formatted dataset with the tide accessor.
+    Returns
+    -------
+    dset (xr.Dataset)
+        Formatted dataset with the tide accessor.
 
-    Note:
-        - The atlas dataset is very large and requires large amount of RAM to be
-          processed, we recommend setting the bounds x0, x1, y0, y1 when reading.
-        - It is a good idea setting nxchunk, nychunk close to the slicing sizes.
+    Notes
+    -----
+
+    - The atlas dataset is very large and requires large amount of RAM to be
+      processed, we recommend setting the bounds x0, x1, y0, y1 when reading.
+    - It is a good idea setting nxchunk, nychunk close to the slicing sizes.
 
     """
     gfile = list(Path(dirname).glob("g*.nc"))[0]
@@ -87,8 +105,38 @@ def read_otis_atlas_netcdf(
     return dset.sel(con=cons, lon=slice(x0, x1), lat=slice(y0, y1))
 
 
-def indices(lon, lat, x0, x1, y0, y1):
-    """Indices of coordinates in lon and lat arrays."""
+def indices(
+        lon: np.ndarray, lat: np.ndarray, x0: float, x1: float, y0: float, y1: float
+    ) -> tuple[int]:
+    """Indices of coordinates in lon and lat arrays.
+
+    Parameters
+    ----------
+    lon (np.ndarray)
+        Longitudes.
+    lat (np.ndarray)
+        Latitudes.
+    x0 (float)
+        Left longitude corner to read.
+    x1 (float)
+        Right longitude corner to read.
+    y0 (float)
+        Bottom latitude corner to read.
+    y1 (float)
+        Top latitude corner to read.
+
+    Returns
+    -------
+    ix0 (int)
+        Left longitude index.
+    ix1 (int)
+        Right longitude index.
+    iy0 (int)
+        Bottom latitude index.
+    iy1 (int)
+        Top latitude index.
+
+    """
     ix0 = 0
     ix1 = lon.size
     iy0 = 0
@@ -104,16 +152,30 @@ def indices(lon, lat, x0, x1, y0, y1):
     return ix0, ix1, iy0, iy1
 
 
-def read_grid(filename, chunks, x0, x1, y0, y1):
-    """Read grid netcdf files.
+def read_grid(
+    filename: str, chunks: dict, x0: float, x1: float, y0: float, y1: float
+) -> xr.Dataset:
+    """Read grid data.
 
-    Args:
-        - filename (str):
-        - nx (int): Chunking size along the nx dimension.
-        - ny (int): Chunking size along the ny dimension.
+    Parameters
+    ----------
+    filename (str)
+        Name of grid file to read.
+    chunks (dict)
+        Mapping dimension names and chunking sizes.
+    x0 (float)
+        Left longitude corner to read.
+    x1 (float)
+        Right longitude corner to read.
+    y0 (float)
+        Bottom latitude corner to read.
+    y1 (float)
+        Top latitude corner to read.
 
-    Return:
-        - dset (Dataset): Merged elevations dataset.
+    Returns
+    -------
+    dset (xr.Dataset)
+        Merged grid dataset.
 
     """
     dset = xr.open_dataset(filename, chunks=chunks)
@@ -140,16 +202,30 @@ def read_grid(filename, chunks, x0, x1, y0, y1):
     return dset
 
 
-def read_elevations(filenames, chunks, x0, x1, y0, y1):
+def read_elevations(
+    filenames: str, chunks: dict, x0: float, x1: float, y0: float, y1: float
+) -> xr.Dataset:
     """Read and concatenate individual elevations constituents netcdf files.
 
-    Args:
-        - filenames (list):
-        - nx (int): Chunking size along the nx dimension.
-        - ny (int): Chunking size along the ny dimension.
+    Parameters
+    ----------
+    filenames (list)
+        Name of elevation files to read.
+    chunks (dict)
+        Mapping dimension names and chunking sizes.
+    x0 (float)
+        Left longitude corner to read.
+    x1 (float)
+        Right longitude corner to read.
+    y0 (float)
+        Bottom latitude corner to read.
+    y1 (float)
+        Top latitude corner to read.
 
-    Return:
-        - dset (Dataset): Merged elevations dataset.
+    Returns
+    -------
+    dset (xr.Dataset)
+        Merged elevation dataset.
 
     """
     dset = xr.open_mfdataset(
@@ -162,16 +238,30 @@ def read_elevations(filenames, chunks, x0, x1, y0, y1):
     return dset
 
 
-def read_transports(filenames, chunks, x0, x1, y0, y1):
+def read_transports(
+    filenames: list, chunks: dict, x0: float, x1: float, y0: float, y1: float
+) -> xr.Dataset:
     """Read and concatenate individual transports constituents netcdf files.
 
-    Args:
-        - filenames (list):
-        - nx (int): Chunking size along the nx dimension.
-        - ny (int): Chunking size along the ny dimension.
+    Parameters
+    ----------
+    filenames (list)
+        Name of transport files to read.
+    chunks (dict)
+        Mapping dimension names and chunking sizes.
+    x0 (float)
+        Left longitude corner to read.
+    x1 (float)
+        Right longitude corner to read.
+    y0 (float)
+        Bottom latitude corner to read.
+    y1 (float)
+        Top latitude corner to read.
 
-    Return:
-        - dset (Dataset): Merged transports dataset.
+    Returns
+    -------
+    dset (xr.Dataset)
+        Merged transport dataset.
 
     """
     dset = xr.open_mfdataset(

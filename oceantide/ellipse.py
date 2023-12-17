@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This tidal ellipse package is taken from the PyFVCOM module written Created by
 Pierre Cazenave available at https://github.com/pwcazenave/PyFVCOM.

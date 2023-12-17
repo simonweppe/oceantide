@@ -19,18 +19,23 @@ FILE_FORMATS = {
     ".zarr": "zarr",
 }
 
-def to_oceantide(self, filename, file_format=None, **kwargs):
+def to_oceantide(self, filename: str, file_format: str = None, **kwargs):
     """Write dataset as Oceantide format.
 
     The oceantide format has complex constituents variables split into real and imag
-        variables allowing for better packing and making it easier to support netcdf.
+    variables allowing for better packing and making it easier to support netcdf.
 
-    Args:
-        - self (oceantide.tide.Tide): Oceantide Tide instance.
-        - filename (str): Name for ouput file.
-        - file_format (str): Format for output file, `zarr` and `netcdf` are
-          supported. If not specified it is guessed from the filename extension.
-        - kwargs: Keyword argument to pass to to_netcdf or to_zarr method.
+    Parameters
+    ----------
+    self (oceantide.tide.Tide)
+        Oceantide Tide instance.
+    filename (str)
+        Name for ouput file.
+    file_format (str)
+        Format for output file, `zarr` and `netcdf` are supported. If not specified it
+        is guessed from the filename extension.
+    kwargs
+        Keyword argument to pass to to_netcdf or to_zarr method.
 
     """
     dset = self._obj[["dep"]]
@@ -58,8 +63,19 @@ def to_oceantide(self, filename, file_format=None, **kwargs):
     writer(dset, filename, **kwargs)
 
 
-def _write_zarr(dset, filename, **kwargs):
-    """Write oceantide zarr file format."""
+def _write_zarr(dset: xr.Dataset, filename: str, **kwargs):
+    """Write oceantide zarr file format.
+
+    Parameters
+    ----------
+    dset (xr.Dataset)
+        Dataset to write.
+    filename (str)
+        Name for ouput file.
+    kwargs
+        Keyword argument to pass to to_zarr method.
+
+    """
     kw = {"dtype": "float32", "astype": "int16"}
     fd = FixedScaleOffset(offset=ADD_OFFSET_D, scale=1 / SCALE_FACTOR_D, **kw)
     fa = FixedScaleOffset(offset=ADD_OFFSET_A, scale=1 / SCALE_FACTOR_A, **kw)
@@ -73,8 +89,19 @@ def _write_zarr(dset, filename, **kwargs):
     dset.to_zarr(filename, **kwargs)
 
 
-def _write_netcdf(dset, filename, **kwargs):
-    """Write oceantide netcdf file format."""
+def _write_netcdf(dset: xr.Dataset, filename: str, **kwargs):
+    """Write oceantide netcdf file format.
+
+    Parameters
+    ----------
+    dset (xr.Dataset)
+        Dataset to write.
+    filename (str)
+        Name for ouput file.
+    kwargs
+        Keyword argument to pass to to_netcdf method.
+
+    """
     encoding = {
         "zlib": True,
         "_FillValue": np.int16(2 ** 16 / 2 - 1),

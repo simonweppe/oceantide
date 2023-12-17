@@ -7,19 +7,35 @@ from oceantide.core.otis import u_from_z, v_from_z, indices_open_boundary
 from oceantide.core.utils import set_attributes
 
 
-def to_otis_netcdf(self, dirname, hfile=True, ufile=True, gfile=True, suffix=None):
+def to_otis_netcdf(
+    self,
+    dirname: str,
+    hfile: bool = True,
+    ufile: bool = True,
+    gfile: bool = True,
+    suffix: bool = None
+) -> dict:
     """Write dataset as Otis binary format.
 
-    Args:
-        - self (oceantide.tide.Tide): Oceantide Tide instance.
-        - dirname (str): Directory to save binary files.
-        - hfile (bool): Save tidal elevation binary file.
-        - ufile (bool): Save tidal transports binary file.
-        - gfile (bool): Save grid file.
-        - suffix (str): Suffix to define file names, by default defined by cons names.
+    Parameters
+    ----------
+    self (oceantide.tide.Tide)
+        Oceantide Tide instance.
+    dirname (str)
+        Directory to save binary files.
+    hfile (bool)
+        Save tidal elevation binary file.
+    ufile (bool)
+        Save tidal transports binary file.
+    gfile (bool)
+        Save grid file.
+    suffix (str)
+        Suffix to define file names, by default defined by cons names.
 
-    Return:
-        - filename (dict): Name of files written.
+    Returns
+    -------
+    filename (dict)
+        Name of files written.
 
     """
     ds = self._obj.transpose("con", "lon", "lat", ...)

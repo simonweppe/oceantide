@@ -5,22 +5,31 @@ from oceantide.tide import Tide
 from oceantide.core.utils import set_attributes
 
 
-def read_oceantide(filename=None, engine=None, chunks={}, **kwargs):
+def read_oceantide(
+    filename: str = None, engine: str = None, chunks: dict = {}, **kwargs
+) -> xr.Dataset:
     """Read oceantide file format.
 
     The oceantide format has complex constituents variables split into real and imag
-        variables allowing for better packing and making it easier to support netcdf.
+    variables allowing for better packing and making it easier to support netcdf.
 
-    Args:
-        - filename (str): Name of Oceantide dataset to read.
-        - engine (str): Engine to pass to xr.open_dataset, guessed by xarray based on
-          filename extension if not specified.
-        - chunks (dict): Chunk sizes along each dimensions to pass to xr.open_dataset,
-          by default use chunking specified on disk.
-        - kwargs: Extra kwargs to pass to xr.open_dataset.
+    parameters
+    ----------
+    filename (str)
+        Name of Oceantide dataset to read.
+    engine (str)
+        Engine to pass to xr.open_dataset, guessed by xarray based on filename
+        extension if not specified.
+    chunks (dict)
+        Chunk sizes along each dimensions to pass to xr.open_dataset, by default use
+        chunking specified on disk.
+    kwargs
+        Extra kwargs to pass to xr.open_dataset.
 
-    Returns:
-        - Formatted dataset with complex variables and the tide accessor.
+    Returns
+    -------
+    dset (xr.Dataset)
+        Formatted dataset with complex variables and the tide accessor.
 
     """
     dset = xr.open_dataset(filename, engine=engine, chunks=chunks, **kwargs)

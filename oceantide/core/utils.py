@@ -10,18 +10,25 @@ from oceantide.constituents import V0U
 HERE = Path(__file__).parent
 
 
-def nodal(time, con):
+def nodal(time: np.ndarray, con: np.ndarray) -> tuple[np.ndarray]:
     """Nodal correction.
 
-    Args:
-        - time (1darray): Time given as the number of days since 01 Jan 1992 + 48622,
-          or equivalently the number of days since 17 Nov 1858.
-        - con (1darray): Constituents to compute.
+    Parameters
+    ----------
+    time (1darray)
+        Time given as the number of days since 01 Jan 1992 + 48622, or equivalently
+        the number of days since 17 Nov 1858.
+    con (1darray)
+        Constituents to compute.
 
-    Returns:
-        - pu (1darray): Nodal correction pu.
-        - pf (1darray): Nodal correction pf.
-        - v0u (1darray): Nodal correction v0u.
+    Returns
+    -------
+    pu (1darray)
+        Nodal correction pu.
+    pf (1darray)
+        Nodal correction pf.
+    v0u (1darray)
+        Nodal correction v0u.
 
     """
     rad = np.pi / 180.0
@@ -107,18 +114,25 @@ def nodal(time, con):
     return pu, pf, v0u
 
 
-def astrol(time):
+def astrol(time: np.ndarray) -> tuple[np.ndarray]:
     """Mean astronomical longitudes  s, h, p, N.
 
-    Args:
-        - time (1darray): Time given as the number of days since 01 Jan 1992 + 48622,
-          or equivalently the number of days since 17 Nov 1858.
+    Parameters
+    ----------
+    time (1darray)
+        Time given as the number of days since 01 Jan 1992 + 48622, or equivalently
+        the number of days since 17 Nov 1858.
 
-    Returns:
-        - s (1darray): The mean longitude of moon.
-        - h (1darray): The mean longitude of sun.
-        - p (1darray): The mean longitude of lunar perigee.
-        - N (1darray): The mean longitude of ascending lunar node.
+    Returns
+    -------
+    s (1darray)
+        The mean longitude of moon.
+    h (1darray)
+        The mean longitude of sun.
+    p (1darray)
+        The mean longitude of lunar perigee.
+    N (1darray)
+        The mean longitude of ascending lunar node.
 
     """
     T = time - 51544.4993
@@ -129,21 +143,34 @@ def astrol(time):
     return s, h, p, N
 
 
-def arakawa_grid(nx, ny, x0, x1, y0, y1, variable):
+def arakawa_grid(
+    nx: int, ny: int, x0: float, x1: float, y0: float, y1: float, variable: str
+) -> tuple[np.ndarray]:
     """Arakawa grid coordinates for variable.
 
-    Args:
-        - nx (int): Number of grid point along the x direction.
-        - ny (int): Number of grid point along the y direction.
-        - x0 (float): Left limit (degrees).
-        - x1 (float): Right limit (degrees).
-        - y0 (float): Bottom limit (degrees).
-        - y1 (float): Left limit (degrees).
-        - variable (str): Model variable, one of 'h', 'u', 'v'.
+    Parameters
+    ----------
+    nx (int)
+        Number of grid point along the x direction.
+    ny (int)
+        Number of grid point along the y direction.
+    x0 (float)
+        Left limit (degrees).
+    x1 (float)
+        Right limit (degrees).
+    y0 (float)
+        Bottom limit (degrees).
+    y1 (float)
+        Left limit (degrees).
+    variable (str)
+        Model variable, one of 'h', 'u', 'v'.
 
-    Returns:
-        - lon (1darray): Longitude coordinates in Arakawa grid for variable.
-        - lat (1darray): Latitude coordinates in Arakawa for variable.
+    Returns
+    -------
+    lon (1darray)
+        Longitude coordinates in Arakawa grid for variable.
+    lat (1darray)
+        Latitude coordinates in Arakawa for variable.
 
     """
     dx = (x1 - x0) / nx
@@ -164,12 +191,15 @@ def arakawa_grid(nx, ny, x0, x1, y0, y1, variable):
     return lon, lat
 
 
-def set_attributes(dset, dataset_type):
+def set_attributes(dset: xr.Dataset, dataset_type: str):
     """Set variable attributes for variables from given dataset type.
 
-    Args:
-        dset (Dataset): Dataset to set attributes from.docs
-        dataset_type (str): Dataset type, e.g., 'otis'.
+    Parameters
+    ----------
+    dset (Dataset)
+        Dataset to set attributes from.docs
+    dataset_type (str)
+        Dataset type, e.g., 'otis'.
 
     """
     all_attrs = yaml.load(open(HERE / "attributes.yml"), Loader=yaml.Loader)
@@ -180,17 +210,24 @@ def set_attributes(dset, dataset_type):
         dset.attrs.update(all_attrs.get(dataset_type).get(dset.name, {}))
 
 
-def compute_scale_and_offset(vmin, vmax, nbit=16):
+def compute_scale_and_offset(vmin: float, vmax: float, nbit: int = 16) -> tuple[float]:
     """Returns the scale_factor and add_offset for packing data.
 
-    Args:
-        - vmin (float): The minumum value in the array to pack.
-        - vmax (float): The maximum value in the array to pack.
-        - nbit (int): The number of bits into which you wish to pack.
+    Parameters
+    ----------
+    vmin (float)
+        The minumum value in the array to pack.
+    vmax (float)
+        The maximum value in the array to pack.
+    nbit (int)
+        The number of bits into which you wish to pack.
 
-    Returns:
-        - scale_factor (float): The scale factor value to use for packing array.
-        - add_offset (float): The add_offset value to use for packing array.
+    Returns
+    -------
+    scale_factor (float)
+        The scale factor value to use for packing array.
+    add_offset (float)
+        The add_offset value to use for packing array.
 
     """
     if vmax == vmin:
