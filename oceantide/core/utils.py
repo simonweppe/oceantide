@@ -10,7 +10,7 @@ from oceantide.constituents import V0U
 HERE = Path(__file__).parent
 
 
-def nodal(time: np.ndarray, con: np.ndarray) -> tuple[np.ndarray]:
+def nodal(time: np.ndarray, con: np.ndarray):
     """Nodal correction.
 
     Parameters
@@ -114,7 +114,7 @@ def nodal(time: np.ndarray, con: np.ndarray) -> tuple[np.ndarray]:
     return pu, pf, v0u
 
 
-def astrol(time: np.ndarray) -> tuple[np.ndarray]:
+def astrol(time: np.ndarray):
     """Mean astronomical longitudes  s, h, p, N.
 
     Parameters
@@ -145,7 +145,7 @@ def astrol(time: np.ndarray) -> tuple[np.ndarray]:
 
 def arakawa_grid(
     nx: int, ny: int, x0: float, x1: float, y0: float, y1: float, variable: str
-) -> tuple[np.ndarray]:
+):
     """Arakawa grid coordinates for variable.
 
     Parameters
@@ -210,7 +210,7 @@ def set_attributes(dset: xr.Dataset, dataset_type: str):
         dset.attrs.update(all_attrs.get(dataset_type).get(dset.name, {}))
 
 
-def compute_scale_and_offset(vmin: float, vmax: float, nbit: int = 16) -> tuple[float]:
+def compute_scale_and_offset(vmin: float, vmax: float, nbit: int = 16):
     """Returns the scale_factor and add_offset for packing data.
 
     Parameters
