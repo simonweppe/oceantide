@@ -72,7 +72,7 @@ class Tide(metaclass=Plugin):
             if v in self._obj.data_vars and not np.iscomplexobj(self._obj[v]):
                 raise ValueError(f"Variable {v} must be complex type.")
 
-        vars_dims = [self._obj[v].dims for v in required_vars]
+        vars_dims = [self._obj[v].dims for v in required_vars if v in self._obj]
         if len(set(vars_dims)) != 1:
             raise ValueError(f"Variables {required_vars} must share a common grid.")
 
