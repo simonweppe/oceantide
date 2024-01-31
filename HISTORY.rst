@@ -7,6 +7,16 @@ Releases
 ********
 
 
+0.7.0 (2024-01-31)
+__________________
+
+Internal Changes
+----------------
+
+* Support datasets in tide accessors with only a subset of h, u, v variables
+  (`PR1 <https://github.com/oceanum/oceantide/pull/1>`_).
+
+
 0.6.0 (2023-12-18)
 __________________
 

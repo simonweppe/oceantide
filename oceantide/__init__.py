@@ -1,6 +1,6 @@
 """Top-level package for oceantide."""
 
-__version__ = "0.6.1"
+__version__ = "0.7.0"
 
 
 def _import_read_functions(pkgname: str = "input"):
