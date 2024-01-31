@@ -2,12 +2,11 @@
 import os
 import re
 import glob
-import types
+import logging
 from pathlib import Path
 from importlib import import_module
 from inspect import getmembers, isfunction
 import datetime
-import warnings
 import numpy as np
 import dask.array as da
 import pandas as pd
@@ -16,6 +15,8 @@ import xarray as xr
 from oceantide.core.utils import nodal, set_attributes
 from oceantide.constituents import OMEGA
 
+
+logger = logging.getLogger(__name__)
 
 HERE = Path(__file__).parent
 
@@ -63,7 +64,7 @@ class Tide(metaclass=Plugin):
         """
         required_vars = ["h", "u", "v"]
         if not set(required_vars).issubset(self._obj.data_vars):
-            warnings.warn(
+            logger.debug(
                 f"Tide accessor requires variables {required_vars} in dataset for full"
                 f" functionality but only found {list(self._obj.data_vars.keys())}."
             )
@@ -152,7 +153,7 @@ class Tide(metaclass=Plugin):
         # Slice out unsupported cons
         non_supported = set(cons) - OMEGA.keys()
         if non_supported:
-            warnings.warn(f"Cons {non_supported} not supported and will be ignored")
+            logger.warning(f"Cons {non_supported} not supported and will be ignored")
             cons = [con for con in cons if con not in non_supported]
             ds = self._obj.sel(con=cons)
         else:
